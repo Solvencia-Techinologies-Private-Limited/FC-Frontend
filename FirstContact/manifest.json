@@ -1,0 +1,18 @@
+{
+  "$schema": "https://schema.showpad.com/app/manifest.v2.json",
+  "schema": {
+    "type": "app-manifest",
+    "version": 2
+  },
+  "appKey": "com.showpad.team-activities",
+  "name": "Firstcontact App",
+  "version": "0.0.1",
+  "description": {
+    "short": "Firstcontact App",
+    "full": "An App to propose first contact with a prospect"
+  },
+  "developer": {
+    "name": "Devs",
+    "websiteUrl": "www.showpad.com"
+  }
+}
