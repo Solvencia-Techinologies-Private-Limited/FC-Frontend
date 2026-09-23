@@ -1,0 +1,50 @@
+
+/**
+ * Shared host layout for route MFEs embedded in the Vue shell.
+ * Mirrors legacy monolith shell spacing: no extra top gap, shell provides horizontal padding.
+ */
+@mixin main-resets() {
+  font-family: "Foundry Sterling", system-ui, -apple-system, sans-serif !important;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}
+
+@mixin mfe-shell-host-layout($root-id) {
+  :host {
+    display: block;
+    width: 100%;
+    position: relative;
+    overflow: visible !important;
+    background-color: transparent !important;
+    min-height: 0 !important;
+
+    @include main-resets();
+  }
+
+  ##{$root-id} {
+    width: 100%;
+    margin: 0 auto;
+    padding: 0 0 40px;
+  }
+
+  .mfe-main-container {
+    margin: 0 auto;
+    box-sizing: border-box;
+    padding-top: 0;
+  }
+
+  main {
+    display: block;
+    margin: 0;
+    padding: 0;
+  }
+
+  /* Route pages already sit inside the shell content wrapper; avoid nested container offsets. */
+  .container {
+    width: 100%;
+    margin-right: auto;
+    margin-left: auto;
+    padding-left: 0;
+    padding-right: 0;
+  }
+}

@@ -1,0 +1,107 @@
+// Redundant internal partials removed
+@import "../../shared-lib/src/lib/shared/styles/main.scss";
+
+
+/* 
+NG-SELECT GLOBAL UTILITIES
+Apply .ng-select-pill to any ng-select to get the legacy blue pill design.
+*/
+
+.ng-select.ng-select-pill {
+  width: 150px !important;
+  display: block !important;
+
+  .ng-select-container {
+    background: #FFFFFF !important;
+    border: 1.5px solid #005CAB !important;
+    border-radius: 999px !important; // Forces pill shape
+    min-height: 40px !important;
+    height: 40px !important;
+    color: #005CAB !important;
+    font-family: 'Foundry-Sterling-Book', 'Foundry Sterling', sans-serif !important;
+    font-weight: 600 !important;
+    font-size: 16px !important;
+    box-shadow: none !important;
+    align-items: center !important;
+
+    .ng-value-container {
+      padding-left: 16px !important;
+      border-top: none !important;
+      
+      .ng-value {
+        color: #005CAB !important;
+        font-weight: 600 !important;
+        
+        .ng-value-label {
+          position: relative;
+          top: 0px !important;
+          font-family: 'Foundry-Sterling-Book', 'Foundry Sterling', sans-serif !important;
+        }
+      }
+      
+      .ng-placeholder {
+          color: #005CAB !important;
+          top: 0px !important;
+      }
+    }
+
+    .ng-arrow-wrapper {
+      padding-right: 12px !important;
+      width: 30px !important;
+      align-self: center !important;
+      
+      .ng-arrow {
+        border: none !important;
+        background-image: url("data:image/svg+xml;utf8,<svg width='20' height='20' viewBox='0 0 20 20' fill='none' xmlns='http://www.w3.org/2000/svg'><path d='M8.42166 14.2197L2.8525 9.69477C2.35378 9.28956 2.20479 8.5916 2.49458 8.01807C2.88833 7.23877 3.90195 7.02363 4.5783 7.57581L9.99814 12.0006L15.418 7.57581C16.0943 7.02363 17.1079 7.23877 17.5017 8.01807C17.7915 8.5916 17.6425 9.28956 17.1438 9.69477L11.5746 14.2197C10.6561 14.966 9.34016 14.966 8.42166 14.2197Z' fill='%23005CAB'/></svg>") !important;
+        width: 20px !important;
+        height: 20px !important;
+        background-position: center;
+        background-repeat: no-repeat;
+        background-size: contain;
+        transition: .2s ease-in-out;
+        opacity: 1 !important;
+      }
+    }
+  }
+
+  &.ng-select-opened {
+      .ng-select-container .ng-arrow-wrapper .ng-arrow {
+          transform: rotate(180deg) !important;
+      }
+  }
+}
+
+/* Dropdown Panel - Handled via MfeOverlayContainer into Shadow Root */
+.ng-dropdown-panel {
+  background: #FFFFFF !important;
+  border: 1px solid #dfe3e8 !important;
+  box-shadow: 0 4px 12px rgba(0,0,0,0.1) !important;
+  z-index: 1002 !important;
+
+  &.ng-select-bottom {
+    margin-top: 5px !important;
+    border-radius: 8px !important;
+    overflow: hidden;
+    
+    .ng-dropdown-panel-items {
+      .ng-option {
+        padding: 10px 12px !important;
+        font-family: 'Foundry-Sterling-Book', 'Foundry Sterling', sans-serif !important;
+        font-weight: 500 !important;
+        color: #2D353D !important;
+
+        &.ng-option-selected, &.ng-option-selected.ng-option-marked {
+          background-color: #E7F6FF !important;
+          color: #2D353D !important;
+        }
+
+        &.ng-option-marked {
+          background-color: #f4f6f8 !important;
+        }
+      }
+    }
+  }
+}
+.text-primary-graphite{
+  color: #2D353D !important;
+}
