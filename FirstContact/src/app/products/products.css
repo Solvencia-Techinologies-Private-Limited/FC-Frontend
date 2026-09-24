@@ -1,0 +1,66 @@
+/* page / section background */
+body {
+  background: #f6f8fc;
+  font-family: "Nunito Sans", "Segoe UI", Helvetica, Arial, sans-serif;
+}
+
+/* the grid */
+.lens-grid {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  column-gap: 48px;
+  row-gap: 22px;
+  max-width: 946px;
+  margin: 0 auto;
+  padding: 0;
+}
+
+/* each card */
+.lens-card {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: space-between;
+  min-height: 170px;
+  padding: 20px 14px 18px;
+  background: #ffffff;
+  border-radius: 8px;
+  box-shadow: 0 2px 8px rgba(30, 50, 90, 0.08);
+  text-decoration: none;
+  cursor: pointer;
+  transition: box-shadow 0.2s ease, transform 0.2s ease;
+}
+
+.lens-card:hover {
+  box-shadow: 0 4px 14px rgba(30, 50, 90, 0.16);
+  transform: translateY(-2px);
+}
+
+/* product image */
+.lens-card img {
+  width: 100%;
+  max-width: 150px;
+  height: 90px;
+  object-fit: contain;
+  display: block;
+}
+
+/* product name */
+.lens-name {
+  margin-top: 14px;
+  font-size: 15px;
+  line-height: 1.2;
+  font-weight: 400;
+  color: #333;
+  text-align: center;
+}
+
+/* optional: selected state (blue border like the first card) */
+.lens-card.selected {
+  box-shadow: 0 0 0 3px #4a90f0, 0 2px 8px rgba(30, 50, 90, 0.08);
+}
+
+/* responsive */
+@media (max-width: 900px) {
+  .lens-grid { grid-template-columns: repeat(2, 1fr); column-gap: 24px; }
+}

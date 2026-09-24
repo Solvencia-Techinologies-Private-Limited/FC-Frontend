@@ -1,0 +1,21 @@
+<div class="modal-overlay" (click)="onClose()">
+  <div class="modal-content" (click)="$event.stopPropagation()">
+    <button class="modal-close" (click)="onClose()" aria-label="Close">&times;</button>
+
+    <img
+      class="modal-product-image"
+      [src]="getImagePath(product['Image'])"
+      [alt]="product['brandId']"
+      (error)="onImageError($event)"
+    />
+    <h2 class="modal-product-name">{{ product['brandId'] }}</h2>
+
+    <p class="modal-prompt">Please choose a contact selection mechanism:</p>
+
+    <div class="modal-options">
+      <button class="option-btn" (click)="onSelect('ContactPicker')">Contact Picker</button>
+      <button class="option-btn" (click)="onSelect('ClassicContactPicker')">Classic Contact Picker</button>
+      <button class="option-btn" (click)="onSelect('FitSet')">Fit Set</button>
+    </div>
+  </div>
+</div>

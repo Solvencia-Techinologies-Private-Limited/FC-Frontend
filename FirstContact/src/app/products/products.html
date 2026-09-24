@@ -1,0 +1,31 @@
+<div class="lens-grid">
+  <ng-container *ngIf="!loading(); else loadingTpl">
+    <div
+      class="lens-card"
+      *ngFor="let product of filteredProductsSign(); trackBy: trackByBrand"
+      (click)="openProductModal(product)"
+    >
+      <div class="modal-product-image">
+        <img
+          [src]="getImagePath(product['Image'])"
+          [alt]="product['brandId']"
+        />
+      </div>
+      <p class="lens-name">{{ product['brandId'] }}</p>
+    </div>
+  </ng-container>
+
+  <ng-template #loadingTpl>
+    <p>Loading products...</p>
+  </ng-template>
+
+  <p class="error" *ngIf="error()">{{ error() }}</p>
+</div>
+
+<app-product-selection-modal
+  *ngIf="selectedProduct() as product"
+  [product]="product"
+  [getImagePath]="getImagePath"
+  (closeModal)="closeProductModal()"
+  (mechanismSelected)="onSelectMechanism($event)"
+></app-product-selection-modal>
