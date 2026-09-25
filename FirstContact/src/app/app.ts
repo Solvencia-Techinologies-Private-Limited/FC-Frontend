@@ -1,10 +1,10 @@
 import { Component, signal } from '@angular/core';
 import { RouterOutlet } from '@angular/router';
-import { Tenants } from './tenants/tenants';
+import { TenantSelection } from './tenant-selection/tenant-selection.component';
 
 @Component({
   selector: 'app-root',
-  imports: [RouterOutlet,Tenants],
+  imports: [RouterOutlet, TenantSelection],
   templateUrl: './app.html',
   styleUrl: './app.css'
 })

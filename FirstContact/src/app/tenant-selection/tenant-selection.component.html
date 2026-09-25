@@ -1,0 +1,112 @@
+<div class="bg-slate-100 min-h-screen font-sans text-slate-800">
+    <div class="mx-auto space-y-5 px-4 sm:px-6 lg:px-8 py-12">
+        <div class="bg-white border border-slate-200 rounded-lg shadow-xs overflow-hidden divide-y divide-slate-100">
+            @if (tenantDetails().length > 0) {
+            @for (tenant of tenantDetails(); track $index) {
+            <div
+                class="p-4 sm:px-6 hover:bg-slate-50/80 transition-colors flex flex-col md:flex-row md:items-center justify-between gap-4">
+                <!-- Left Column: Icon + Store Name & Address -->
+                <div class="flex items-start gap-4 flex-1 min-w-0"> <!-- Store Icon Badge -->
+                    <div
+                        class="w-10 h-10 rounded-md bg-slate-100 flex items-center justify-center text-slate-400 shrink-0">
+                        <svg width="50" height="50" viewBox="0 0 50 50" fill="none" xmlns="http://www.w3.org/2000/svg">
+                            <path fill-rule="evenodd" clip-rule="evenodd"
+                                d="M13.9744 2.5C13.3654 2.5 12.8718 2.9797 12.8718 3.57143V47.5H21.6923V40.8036C21.6923 40.3598 22.0625 40 22.5192 40H27.4808C27.9375 40 28.3077 40.3598 28.3077 40.8036V47.5H37.1282V3.57143C37.1282 2.97969 36.6346 2.5 36.0256 2.5H13.9744ZM17.0064 8.39286C16.5497 8.39286 16.1795 8.75263 16.1795 9.19643V11.3393C16.1795 11.7831 16.5497 12.1429 17.0064 12.1429H19.2115C19.6682 12.1429 20.0385 11.7831 20.0385 11.3393V9.19643C20.0385 8.75263 19.6682 8.39286 19.2115 8.39286H17.0064ZM17.0064 17.5C16.5497 17.5 16.1795 17.8598 16.1795 18.3036V20.4464C16.1795 20.8902 16.5497 21.25 17.0064 21.25H19.2115C19.6682 21.25 20.0385 20.8902 20.0385 20.4464V18.3036C20.0385 17.8598 19.6682 17.5 19.2115 17.5H17.0064ZM16.1795 27.4107C16.1795 26.9669 16.5497 26.6071 17.0064 26.6071H19.2115C19.6682 26.6071 20.0385 26.9669 20.0385 27.4107V29.5536C20.0385 29.9974 19.6682 30.3571 19.2115 30.3571H17.0064C16.5497 30.3571 16.1795 29.9974 16.1795 29.5536V27.4107ZM23.8974 8.39286C23.4407 8.39286 23.0705 8.75263 23.0705 9.19643V11.3393C23.0705 11.7831 23.4407 12.1429 23.8974 12.1429H26.1026C26.5593 12.1429 26.9295 11.7831 26.9295 11.3393V9.19643C26.9295 8.75263 26.5593 8.39286 26.1026 8.39286H23.8974ZM23.0705 18.3036C23.0705 17.8598 23.4407 17.5 23.8974 17.5H26.1026C26.5593 17.5 26.9295 17.8598 26.9295 18.3036V20.4464C26.9295 20.8902 26.5593 21.25 26.1026 21.25H23.8974C23.4407 21.25 23.0705 20.8902 23.0705 20.4464V18.3036ZM23.8974 26.6071C23.4407 26.6071 23.0705 26.9669 23.0705 27.4107V29.5536C23.0705 29.9974 23.4407 30.3571 23.8974 30.3571H26.1026C26.5593 30.3571 26.9295 29.9974 26.9295 29.5536V27.4107C26.9295 26.9669 26.5593 26.6071 26.1026 26.6071H23.8974ZM29.9615 9.19643C29.9615 8.75263 30.3318 8.39286 30.7885 8.39286H32.9936C33.4503 8.39286 33.8205 8.75263 33.8205 9.19643V11.3393C33.8205 11.7831 33.4503 12.1429 32.9936 12.1429H30.7885C30.3318 12.1429 29.9615 11.7831 29.9615 11.3393V9.19643ZM30.7885 17.5C30.3318 17.5 29.9615 17.8598 29.9615 18.3036V20.4464C29.9615 20.8902 30.3318 21.25 30.7885 21.25H32.9936C33.4503 21.25 33.8205 20.8902 33.8205 20.4464V18.3036C33.8205 17.8598 33.4503 17.5 32.9936 17.5H30.7885ZM29.9615 27.4107C29.9615 26.9669 30.3318 26.6071 30.7885 26.6071H32.9936C33.4503 26.6071 33.8205 26.9669 33.8205 27.4107V29.5536C33.8205 29.9974 33.4503 30.3571 32.9936 30.3571H30.7885C30.3318 30.3571 29.9615 29.9974 29.9615 29.5536V27.4107Z"
+                                fill="#C4CDD5" />
+                            <path
+                                d="M10.6667 47.5H3.5V18.9777C3.5 18.5454 3.76735 18.1554 4.17789 17.9889L10.6667 15.3571V47.5Z"
+                                fill="#C4CDD5" />
+                            <path
+                                d="M39.3333 47.5H46.5V18.9777C46.5 18.5454 46.2327 18.1554 45.8221 17.9889L39.3333 15.3571V47.5Z"
+                                fill="#C4CDD5" />
+                        </svg>
+                    </div>
+                    <div class="space-y-0.5 min-w-0">
+                        <div class="flex items-center gap-2">
+                            <h3 class="font-bold text-slate-900 text-sm truncate">{{ tenant.tenantName }}</h3>
+                        </div>
+                        <div class="text-xs text-slate-500 truncate">
+                            @if (tenant?.locationAddress?.street) {
+                            <span>{{ tenant?.locationAddress?.street }},</span>
+                            }
+                            @if (tenant?.locationAddress?.street2) {
+                            <span>{{ tenant?.locationAddress?.street2 }},</span>
+                            }
+                            @if (tenant?.locationAddress?.city) {
+                            <span>{{ tenant?.locationAddress?.city }},</span>
+                            }
+                            @if (tenant?.locationAddress?.state) {
+                            <span>{{ tenant?.locationAddress?.state }}</span>
+                            }
+                            @if (tenant?.locationAddress?.zip) {
+                            <span>{{ tenant?.locationAddress?.zip }}</span>
+                            }
+                            @if (tenant?.locationAddress?.country) {
+                            <span>{{ tenant?.locationAddress?.country }}</span>
+                            }
+                        </div>
+                    </div>
+                </div> <!-- Middle Column: Store Metadata / Contacts -->
+                <div class="flex flex-col gap-x-6 gap-y-1 text-xs text-slate-500">
+                    <!-- ID -->
+                    <div class="space-y-0.5">
+                        <div class="flex items-center gap-1 font-mono text-[11px] text-slate-600">
+                            <span>
+                                <svg width="20" height="20" viewBox="0 0 20 20" fill="none"
+                                    xmlns="http://www.w3.org/2000/svg">
+                                    <path d="M3.36756 17.671V2.33H0.101562V17.671H3.36756Z" fill="#C4CDD5" />
+                                    <path
+                                        d="M19.9087 9.874C19.9087 7.735 19.1497 5.711 17.8157 4.377C15.7457 2.307 13.4917 2.33 10.8697 2.33H6.6377V17.671H9.7887C12.7097 17.671 15.5847 17.602 17.8157 15.371C19.1957 13.991 19.9087 11.944 19.9087 9.874ZM16.6657 9.782C16.6657 13.209 14.8487 15.072 11.3987 15.072H9.8577V4.883H10.7777C12.5487 4.883 14.0437 4.837 15.3547 6.148C16.2287 7.022 16.6657 8.149 16.6657 9.782Z"
+                                        fill="#C4CDD5" />
+                                </svg>
+                            </span>
+                            <span>{{ tenant.locationBPN }}</span>
+                        </div>
+                    </div> <!-- Phone & Email Contacts -->
+                    <div class="space-y-0.5">
+                        <div class="flex items-center gap-1.5 text-slate-600">
+                            <svg width="20" height="20" viewBox="0 0 20 20" fill="none"
+                                xmlns="http://www.w3.org/2000/svg">
+                                <path
+                                    d="M5.7666 9.70081C5.32025 8.8852 5.91561 7.93736 6.65602 7.37501C7.55374 6.6932 8.13341 5.61435 8.13341 4.40011C8.13341 2.33825 6.46194 0.666779 4.40008 0.666779C2.33822 0.666779 0.666748 2.33825 0.666748 4.40011C0.666748 8.28357 2.22684 12.0143 5.01613 14.8009C7.70036 17.4826 11.3197 19.0871 15.1561 19.3073C15.3017 19.3246 15.4498 19.3334 15.6001 19.3334C17.6619 19.3334 19.3334 17.662 19.3334 15.6001C19.3334 13.5382 17.6619 11.8668 15.6001 11.8668C14.3924 11.8668 13.3187 12.4402 12.6363 13.3295C12.0649 14.0744 11.1007 14.6719 10.2796 14.2167C9.33783 13.6947 8.46793 13.0435 7.6993 12.2755C6.92629 11.5033 6.27796 10.6352 5.7666 9.70081Z"
+                                    fill="#C4CDD5" />
+                            </svg>
+                            <span>{{ tenant.locationPhone }}</span>
+                        </div>
+
+                    </div>
+                    <div>
+                        <div class="flex items-center gap-1.5 text-slate-500 text-[11px]">
+                            <svg width="20" height="20" viewBox="0 0 20 20" fill="none"
+                                xmlns="http://www.w3.org/2000/svg">
+                                <path
+                                    d="M2.50059 3.5715C1.71161 3.5715 1.07202 4.2111 1.07202 5.00007V5.17865L10.0006 10.0001L18.9292 5.17865V5.00007C18.9292 4.2111 18.2896 3.5715 17.5006 3.5715H2.50059Z"
+                                    fill="#C4CDD5" />
+                                <path
+                                    d="M18.9292 6.78579L10.0006 11.6072L1.07202 6.78579V15.0001C1.07202 15.7891 1.71161 16.4286 2.50059 16.4286H17.5006C18.2896 16.4286 18.9292 15.7891 18.9292 15.0001V6.78579Z"
+                                    fill="#C4CDD5" />
+                            </svg>
+
+                            <span class="truncate max-w-[200px]">{{ tenant.locationEmail }}</span>
+                        </div>
+                    </div>
+                </div> <!-- Right Column: Select Button -->
+                <div class="shrink-0 self-end md:self-auto"> 
+                    <button class="w-[200px] button-primary text-white text-base h-12 medium rounded-full whitespace-nowrap">
+                        {{ 'Select This Store' }}
+                    </button>
+                </div>
+            </div> } @empty { <div class="p-12 text-center text-slate-400 space-y-3"> <svg
+                    class="w-10 h-10 mx-auto text-slate-300" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5"
+                        d="M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16m14 0h2m-2 0h-5m-9 0H3m2 0h5m0 0v-5a1 1 0 011-1h2a1 1 0 011 1v5m-4 0h4" />
+                </svg>
+                <p class="text-sm font-medium text-slate-600">No stores found matching your search query.</p> <button
+                    class="text-xs text-blue-700 font-semibold hover:underline"> Clear search query </button>
+            </div>
+            }
+            }
+        </div>
+
+    </div>
+</div>
