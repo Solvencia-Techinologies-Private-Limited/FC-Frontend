@@ -1,6 +1,7 @@
 import { Component, EventEmitter, Input, Output } from '@angular/core';
-export type ContactSelectionMechanism = 'ContactPicker' | 'ClassicContactPicker' | 'FitSet';
 import { Product } from '../product-modal.model';
+import { ClassicContactPicker } from '../classic-contact-picker/classic-contact-picker';
+import { MatDialog } from '@angular/material/dialog';
 
 @Component({
   selector: 'app-product-selection-modal',
@@ -13,17 +14,32 @@ export class ProductSelectionModal {
   @Input() getImagePath!: (fileName: string) => string;
 
   @Output() closeModal = new EventEmitter<void>();
-  @Output() mechanismSelected = new EventEmitter<ContactSelectionMechanism>();
+  isContactPickerOpen = false;
+
+  constructor(private dialog: MatDialog) {}
 
   onClose(): void {
     this.closeModal.emit();
   }
 
-  onSelect(mechanism: ContactSelectionMechanism): void {
-    this.mechanismSelected.emit(mechanism);
-  }
-
   onImageError(event: Event): void {
     (event.target as HTMLImageElement).src = '/assets/images/products/placeholder.jpg';
+  }  
+
+  onSelect(option: string): void {
+    if (option === 'ContactPicker') {
+      this.isContactPickerOpen = true;
+    }
+  }
+  openClassicContactPicker(product: any): void {
+    this.dialog.open(ClassicContactPicker, {
+      width: '100vw',
+      height: '100vh',
+      maxWidth: '100vw',
+      maxHeight: '100vh',
+      data: {
+        brandId: product
+      }
+    });
   }
 }

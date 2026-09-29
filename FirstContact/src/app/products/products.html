@@ -27,8 +27,9 @@
   [product]="product"
   [getImagePath]="getImagePath"
   (closeModal)="closeProductModal()"
-  (mechanismSelected)="onSelectMechanism($event)"
+  (mechanismSelected)="onSelectMechanism($any($event))"
 ></app-product-selection-modal>
+
 
 <!-- Full-screen fitset drawer — outside the modal, covers entire viewport -->
 <div *ngIf="showFitSetDrawer" class="fitset-fullscreen">

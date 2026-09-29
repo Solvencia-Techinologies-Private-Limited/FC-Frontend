@@ -2,7 +2,7 @@ import { Component, OnInit, signal, computed } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { ProductService } from './product-services';
 import { Product } from './product-modal.model';
-import { ContactSelectionMechanism, ProductSelectionModal } from './product-selection-modal/product-selection-modal';
+import { ProductSelectionModal } from './product-selection-modal/product-selection-modal';
 import { FitsetDrawerComponent } from '../fitset-drawer/fitset-drawer';
 
 @Component({
@@ -55,11 +55,6 @@ export class Products implements OnInit {
     return `/UK%20Packshots/${fileName}`;
   }
 
-
-// onImageError(event: Event): void {
-  //   (event.target as HTMLImageElement).src = '/assets/images/products/placeholder.jpg';
-  // }
-
   trackByBrand(_: number, p: Product): string {
     return p['brandId'];
   }
@@ -72,7 +67,7 @@ export class Products implements OnInit {
     this.selectedProductSign.set(null);
   }
 
-  onSelectMechanism(mechanism: ContactSelectionMechanism): void {
+  onSelectMechanism(mechanism: string): void {
     const product = this.selectedProductSign();
     if (!product) return;
 
@@ -85,8 +80,6 @@ export class Products implements OnInit {
       this.showFitSetDrawer = true;
       return;
     }
-
-    // ContactPicker / ClassicContactPicker fall through here
     this.closeProductModal();
   }
 

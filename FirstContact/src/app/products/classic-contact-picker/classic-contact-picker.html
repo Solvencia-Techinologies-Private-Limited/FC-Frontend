@@ -1,0 +1,208 @@
+<div class="picker-overlay">
+
+  <div class="picker-container">
+
+    <!-- Close -->
+    <button type="button"class="close-button" aria-label="Close"(click)="close()">
+      ×
+    </button>
+
+    <!-- Loading -->
+    @if (loading) {
+
+      <div class="product-content">
+        <!-- Product name -->
+        <div class="product-name">
+          {{ productName }}
+        </div>
+
+        <!-- Selection -->
+        <div class="selection-text">
+          Selection: - none -
+        </div>
+
+        <!-- Quantity -->
+        <div class="quantity-container">
+
+          <button
+            type="button"
+            class="quantity-button"
+            [disabled]="quantity === 0"
+            (click)="decreaseQuantity()">
+            −
+          </button>
+
+          <div class="quantity-value">
+            {{ quantity }}
+          </div>
+
+          <button
+            type="button"
+            class="quantity-button"
+            (click)="increaseQuantity()">
+            +
+          </button>
+
+        </div>
+
+        <!-- Add button (disabled while loading) -->
+        <button
+          type="button"
+          class="add-button"
+          disabled>
+
+          Add Trial Items To Cart
+
+        </button>
+
+      </div>
+
+    }
+
+    <!-- Error -->
+    @else if (error) {
+
+      <div class="error">
+        {{ error }}
+      </div>
+
+    }
+
+    <!-- Product -->
+    @else if (product) {
+
+      <div class="product-content">
+
+        <!-- Product image -->
+        <div class="product-image-wrapper">
+
+          @if (imageUrl) {
+            <img
+              class="product-image"
+              [src]="imageUrl"
+              [alt]="product.brandName" />
+          }
+
+        </div>
+
+        <!-- Product name -->
+        <div class="product-name">
+          {{ product.brandName }}
+        </div>
+
+        <!-- Parameter table (headers + dropdowns/fixed values, side by side) -->
+        @if (parameters.length > 0) {
+
+          <div class="parameters-table">
+
+            <!-- Header row -->
+            <div class="parameters-header">
+
+              @for (parameter of parameters; track parameter.name)  {
+                <div class="parameter-header-cell">
+                  {{ parameter.name }}
+                </div>
+              }
+
+            </div>
+
+            <!-- Value row -->
+            <div class="parameters-body">
+
+              @for (parameter of parameters; track parameter.name)  {
+
+                <div class="parameter-body-cell">
+
+                  @if (parameter.values.length > 1) {
+
+                    <div class="parameter-selector">
+
+                      <select
+                        [value]="selectedValues[parameter.name]"
+                        (change)="selectParameterValue(parameter.name, $any($event.target).value)">
+
+                        <option value="" disabled selected hidden></option>
+
+                        @for (
+                          value of parameter.values;
+                          track value
+                        ) {
+                          <option [value]="value">
+                            {{ value }}
+                          </option>
+                        }
+
+                      </select>
+
+                      <span class="select-arrow">
+                        ▼
+                      </span>
+
+                    </div>
+
+                  }
+                  @else {
+
+                    <div class="parameter-fixed">
+                      {{ parameter.values[0] }}
+                    </div>
+
+                  }
+
+                </div>
+
+              }
+
+            </div>
+
+          </div>
+
+        }
+
+        <!-- Selection -->
+        <div class="selection-text">
+          {{ selectionText }}
+        </div>
+
+        <!-- Quantity -->
+        <div class="quantity-container">
+
+          <button
+            type="button"
+            class="quantity-button"
+            [disabled]="quantity === 0"
+            (click)="decreaseQuantity()">
+            −
+          </button>
+
+          <div class="quantity-value">
+            {{ quantity }}
+          </div>
+
+          <button
+            type="button"
+            class="quantity-button"
+            (click)="increaseQuantity()">
+            +
+          </button>
+
+        </div>
+
+        <!-- Add button -->
+        <button
+          type="button"
+          class="add-button"
+          [disabled]="quantity === 0"
+          (click)="addToCart()">
+
+          Add Trial Items To Cart
+
+        </button>
+
+      </div>
+
+    }
+
+  </div>
+
+</div>
