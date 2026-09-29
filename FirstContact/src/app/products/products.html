@@ -29,3 +29,13 @@
   (closeModal)="closeProductModal()"
   (mechanismSelected)="onSelectMechanism($event)"
 ></app-product-selection-modal>
+
+<!-- Full-screen fitset drawer — outside the modal, covers entire viewport -->
+<div *ngIf="showFitSetDrawer" class="fitset-fullscreen">
+  <app-fitset-drawer
+    [productNameInput]="fitSetProductName"
+    [productImageUrl]="fitSetProductImageUrl"
+    (back)="onFitSetBack()"
+  >
+  </app-fitset-drawer>
+</div>

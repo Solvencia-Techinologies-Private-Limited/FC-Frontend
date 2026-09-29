@@ -64,3 +64,16 @@ body {
 @media (max-width: 900px) {
   .lens-grid { grid-template-columns: repeat(2, 1fr); column-gap: 24px; }
 }
+
+
+/* full-screen fitset drawer overlay — sits on top of everything */
+.fitset-fullscreen {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: #f4f8fc;
+  z-index: 9999;
+  overflow-y: auto;
+}

@@ -1,0 +1,160 @@
+<div class="drawer-page">
+
+  <!-- ===================== HEADER BAR ===================== -->
+  <div class="drawer-header-bar">
+
+    <div class="header-left">
+      <button class="back-arrow-btn" (click)="onBack()" aria-label="Back">←</button>
+      @if (productImageUrl) {
+        <img class="header-product-image" [src]="productImageUrl" [alt]="productName()" />
+      }
+      <span class="header-product-name">{{ productName() }}</span>
+    </div>
+
+    <div class="header-centre">
+
+      @if (productFitSets().length > 1) {
+        <div class="pill-group">
+          @for (fs of productFitSets(); track fs.fitSetName) {
+            <button
+              class="header-pill"
+              [class.active]="selectedFitSetName() === fs.fitSetName"
+              (click)="changeFitSet(fs.fitSetName)"
+            >{{ fs.label }}</button>
+          }
+        </div>
+        @if (cylValues().length > 0) {
+          <div class="pill-separator"></div>
+        }
+      }
+
+      @if (cylValues().length > 0) {
+        <div class="pill-group">
+          @for (cyl of cylValues(); track cyl) {
+            <button
+              class="header-pill"
+              [class.active]="selectedCyl() === cyl"
+              (click)="selectCyl(cyl)"
+            >{{ cyl }}</button>
+          }
+        </div>
+      }
+
+    </div>
+
+    <div class="header-right">
+      <button class="close-btn" (click)="onBack()" aria-label="Close">✕</button>
+    </div>
+
+  </div>
+
+  @if (loading()) { <div class="message">Loading FitSet...</div> }
+  @if (errorMessage()) { <div class="message error">{{ errorMessage() }}</div> }
+
+  @if (!loading() && selectedFitSet()) {
+    <div class="fitset-container">
+
+      @for (drawer of drawers(); track drawer.index; let di = $index) {
+
+        @if (useDrawerLayout()) {
+          <button
+            class="section-header-btn"
+            [class]="drawer.colorClass"
+            (click)="toggleDrawer(di)"
+          >
+            <span class="section-icon" [class.filled]="drawer.expanded">
+              <span class="section-icon-dot"></span>
+            </span>
+            <span class="section-name">{{ drawer.header }}</span>
+            <span class="section-items">Items: {{ getDrawerSelectedCount(drawer) }}</span>
+          </button>
+        }
+
+        @if (!useDrawerLayout() || drawer.expanded) {
+          <div class="section-body">
+
+            @for (cellRow of drawer.cellRows; track $index) {
+
+              <!--
+                gapBelow is set per-row from RowGaps config.
+                It represents the TOTAL space below this row (base + extra).
+                We use margin-bottom to apply it.
+              -->
+              <div class="cell-row" [style.margin-bottom.px]="cellRow.gapBelow">
+
+                @for (group of cellRow.groups; track $index; let gi = $index) {
+
+                  <!-- Cell group: cells that are visually adjacent within the row -->
+                  <div class="cell-group">
+                    @for (contact of group.cells; track $index) {
+                      <div
+                        class="contact-cell"
+                        [class.selected]="isSelected(contact)"
+                        [class.compact]="useCompactCells()"
+                        (click)="toggleContact(contact)"
+                      >
+
+                        <!-- Power: always shown, stays visible when selected -->
+                        <div class="cell-power">{{ getContactValue(contact, 'Power') }}</div>
+
+                        <!-- Cyl × Axis: for toric lenses -->
+                        @if (hasCyl(contact) && hasAxis(contact)) {
+                          <div class="cell-cyl-axis">
+                            {{ getContactValue(contact, 'Cyl') }} × {{ getContactValue(contact, 'Axis') }}
+                          </div>
+                        }
+
+                        <!-- Add value (e.g. "Low", "High") -->
+                        @if (getAdd(contact)) {
+                          <div class="cell-add">Add: {{ getAdd(contact) }}</div>
+                        }
+
+                        <!-- D/N or Type label -->
+                        @if (getDN(contact)) {
+                          <div class="cell-dn">{{ getDN(contact) }}</div>
+                        }
+
+                        <!-- Stepper: below all content so power remains visible -->
+                        @if (isSelected(contact)) {
+                          <div class="quantity-area" (click)="$event.stopPropagation()">
+                            <button class="quantity-button" (click)="decreaseQuantity(contact)">−</button>
+                            <span class="quantity">{{ getQuantity(contact) }}</span>
+                            <button class="quantity-button" (click)="increaseQuantity(contact)">+</button>
+                          </div>
+                        }
+
+                      </div>
+                    }
+                  </div>
+
+                  <!--
+                    Column gap spacer between groups.
+                    Width comes from ColumnGaps config: BASE_GAP_PX + (value * GAP_UNIT_PX)
+                    Only rendered between groups, not after the last one.
+                  -->
+                  @if (gi < cellRow.groups.length - 1) {
+                    <div class="col-gap-spacer" [style.width.px]="group.gapAfter"></div>
+                  }
+
+                }
+
+              </div>
+
+            }
+
+          </div>
+        }
+
+      }
+
+    </div>
+  }
+
+  @if (!loading() && selectedFitSet()) {
+    <div class="bottom-bar">
+      <span class="revenue-units">{{ selectedItemCount() }} Revenue Units</span>
+      <button class="cart-button" (click)="addTrialItemsToCart()">Add Trial Items To Cart</button>
+    </div>
+  }
+
+</div>

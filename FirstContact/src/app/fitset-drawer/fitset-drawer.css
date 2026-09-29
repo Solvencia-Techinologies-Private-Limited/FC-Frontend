@@ -1,0 +1,404 @@
+.drawer-page {
+  width: 100%;
+  min-height: 100%;
+  box-sizing: border-box;
+  padding: 0;
+  padding-bottom: 76px;
+  background: #f4f8fc;
+  font-family: Arial, sans-serif;
+}
+
+/* ===================== HEADER BAR ===================== */
+
+.drawer-header-bar {
+  display: flex;
+  align-items: center;
+  padding: 8px 16px;
+  background: white;
+  border-bottom: 1px solid #e0eaf4;
+  position: sticky;
+  top: 0;
+  z-index: 10;
+  gap: 12px;
+  min-height: 56px;
+}
+
+.header-left {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  flex-shrink: 0;
+}
+
+.back-arrow-btn {
+  border: none;
+  background: #e9f2fb;
+  color: #1a3550;
+  width: 32px;
+  height: 32px;
+  border-radius: 50%;
+  font-size: 15px;
+  font-weight: 700;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.back-arrow-btn:hover { background: #dcebf8; }
+
+.header-product-image {
+  width: 36px;
+  height: 36px;
+  object-fit: contain;
+}
+
+.header-product-name {
+  font-size: 14px;
+  font-weight: 700;
+  color: #1a3550;
+  white-space: nowrap;
+}
+
+.header-centre {
+  flex: 1;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+
+.pill-group {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  flex-wrap: wrap;
+}
+
+.pill-separator {
+  width: 1px;
+  height: 28px;
+  background: #c8ddf0;
+  flex-shrink: 0;
+}
+
+.header-pill {
+  border: 2px solid #b8d4ee;
+  border-radius: 20px;
+  padding: 5px 16px;
+  background: white;
+  color: #1a3550;
+  font-size: 13px;
+  font-weight: 600;
+  cursor: pointer;
+  white-space: nowrap;
+  transition: 0.15s ease;
+}
+
+.header-pill:hover { background: #e9f2fb; }
+
+.header-pill.active {
+  background: #1a73b8;
+  border-color: #1a73b8;
+  color: white;
+}
+
+.header-right { flex-shrink: 0; }
+
+.close-btn {
+  border: none;
+  background: none;
+  color: #7d93a3;
+  font-size: 18px;
+  cursor: pointer;
+  width: 32px;
+  height: 32px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 50%;
+}
+
+.close-btn:hover { background: #f0f4f8; color: #1a3550; }
+
+/* ===================== MESSAGES ===================== */
+
+.message { padding: 20px; text-align: center; color: #35576d; }
+.message.error { color: #b3261e; }
+
+/* ===================== CONTENT AREA ===================== */
+
+.fitset-container {
+  width: 100%;
+  padding: 12px 16px;
+  box-sizing: border-box;
+}
+
+/* ===================== DRAWER SECTION HEADERS ===================== */
+
+.section-header-btn {
+  width: 100%;
+  min-height: 44px;
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 8px 16px;
+  border: none;
+  border-radius: 8px;
+  cursor: pointer;
+  text-align: left;
+  color: white;
+  margin-bottom: 6px;
+}
+
+.section-header-btn.color-a       { background: #176b9f; }
+.section-header-btn.color-b       { background: #2f5f8a; }
+.section-header-btn.color-c       { background: #4a4f8f; }
+.section-header-btn.color-default { background: #176b9f; }
+
+.section-icon {
+  width: 20px;
+  height: 20px;
+  border-radius: 50%;
+  border: 2px solid rgba(255,255,255,0.85);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+}
+
+.section-icon-dot {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  border: 2px solid rgba(255,255,255,0.85);
+}
+
+.section-icon.filled .section-icon-dot { background: white; border-color: white; }
+.section-name { flex: 1; font-size: 13px; font-weight: 600; }
+.section-items { font-size: 11px; white-space: nowrap; opacity: 0.9; }
+.section-body { margin-bottom: 12px; }
+
+/* ===================== ROWS ===================== */
+
+/*
+  .cell-row is a flex container for one row of cells + gap spacers.
+  margin-bottom is set INLINE per row from RowGaps config.
+  This means:
+  - Normal rows: margin-bottom = BASE_GAP_PX (6px)
+  - Rows listed in RowGaps: margin-bottom = BASE_GAP_PX + (value * GAP_UNIT_PX)
+  
+  Example for RowGaps { "6": 2, "12": 2, "18": 1 }:
+    Rows 1-5:  margin-bottom = 6px  (no gap entry)
+    Row 6:     margin-bottom = 30px (6 + 2*12)
+    Rows 7-11: margin-bottom = 6px
+    Row 12:    margin-bottom = 30px
+    Rows 13-17: margin-bottom = 6px
+    Row 18:    margin-bottom = 18px (6 + 1*12)
+*/
+.cell-row {
+  display: flex;
+  align-items: stretch;
+  /* margin-bottom set inline per row */
+}
+
+/*
+  .cell-group contains cells that are visually adjacent (no extra gap between them).
+  gap: 4px is the small inter-cell gap WITHIN a group.
+  flex: 1 makes each group take equal width.
+*/
+.cell-group {
+  display: flex;
+  align-items: stretch;
+  gap: 4px;
+  flex: 1;
+}
+
+/*
+  .col-gap-spacer is inserted BETWEEN cell groups.
+  Width is set inline from ColumnGaps config:
+    spacerWidth = BASE_GAP_PX + (value * GAP_UNIT_PX)
+  
+  Example for ColumnGaps { "2": 2, "4": 2 } with 6 cols:
+    After col 2: spacer width = 6 + 2*12 = 30px
+    After col 4: spacer width = 6 + 2*12 = 30px
+  This creates the clear visual grouping seen in Image 1.
+*/
+.col-gap-spacer {
+  flex-shrink: 0;
+  background: transparent;
+}
+
+/* ===================== CELLS ===================== */
+
+.contact-cell {
+  flex: 1;
+  min-width: 0;
+  box-sizing: border-box;
+  border-radius: 10px;
+  background: #e9f2fb;
+  border: 1px solid #d3e6f6;
+  color: #1a3550;
+  cursor: pointer;
+  transition: background 0.15s ease, border-color 0.15s ease;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  padding: 8px 6px;
+  min-height: 52px;
+}
+
+.contact-cell.compact {
+  padding: 5px 3px;
+  min-height: 44px;
+  border-radius: 6px;
+}
+
+.contact-cell:not(.compact) {
+  min-height: 70px;
+  padding: 10px 8px;
+}
+
+.contact-cell:hover { background: #dcebf8; }
+
+.contact-cell.selected {
+  background: #1a73b8;
+  border-color: #145a91;
+  color: white;
+}
+
+/* Power value — increased font size as requested */
+.cell-power {
+  font-size: 14px;   /* was 12px — increased slightly */
+  font-weight: 700;
+  text-align: center;
+  line-height: 1.2;
+}
+
+.contact-cell.compact .cell-power {
+  font-size: 12px;   /* was 10px — increased slightly */
+}
+
+.contact-cell:not(.compact) .cell-power {
+  font-size: 16px;   /* was 14px — increased slightly */
+}
+
+/* Cyl × Axis — toric lenses */
+.cell-cyl-axis {
+  font-size: 10px;   /* was 9px — increased slightly */
+  font-weight: 500;
+  text-align: center;
+  margin-top: 3px;
+  opacity: 0.85;
+  line-height: 1.2;
+  white-space: nowrap;
+}
+
+.contact-cell.compact .cell-cyl-axis { font-size: 9px; }   /* was 8px */
+.contact-cell:not(.compact) .cell-cyl-axis { font-size: 12px; } /* was 11px */
+.contact-cell.selected .cell-cyl-axis { opacity: 0.9; color: rgba(255,255,255,0.9); }
+
+/* Add value (Low / High etc.) */
+.cell-add {
+  font-size: 10px;
+  font-weight: 600;
+  text-align: center;
+  margin-top: 2px;
+  opacity: 0.85;
+}
+
+.contact-cell.compact .cell-add { font-size: 9px; }
+.contact-cell.selected .cell-add { opacity: 0.9; color: rgba(255,255,255,0.9); }
+
+/* D/N or Type label */
+.cell-dn {
+  font-size: 10px;
+  font-weight: 700;
+  text-align: center;
+  margin-top: 2px;
+  background: rgba(26, 53, 80, 0.12);
+  border-radius: 4px;
+  padding: 1px 5px;
+}
+
+.contact-cell.compact .cell-dn { font-size: 9px; }
+.contact-cell.selected .cell-dn {
+  background: rgba(255,255,255,0.2);
+  color: white;
+}
+
+/* ===================== STEPPER ===================== */
+
+.quantity-area {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 5px;
+  background: white;
+  border-radius: 14px;
+  padding: 2px 6px;
+  margin-top: 5px;
+  width: fit-content;
+}
+
+.quantity-button {
+  width: 18px;
+  height: 18px;
+  border: none;
+  border-radius: 50%;
+  background: #1a73b8;
+  color: white;
+  font-size: 13px;
+  font-weight: bold;
+  line-height: 1;
+  cursor: pointer;
+  padding: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.quantity {
+  min-width: 14px;
+  text-align: center;
+  font-size: 11px;
+  font-weight: 700;
+  color: #1a3550;
+}
+
+/* ===================== BOTTOM BAR ===================== */
+
+.bottom-bar {
+  position: fixed;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 10px 18px;
+  background: white;
+  box-shadow: 0 -2px 8px rgba(0,0,0,0.08);
+}
+
+.revenue-units { font-size: 13px; font-weight: 600; color: #35576d; }
+
+.cart-button {
+  border: none;
+  border-radius: 22px;
+  padding: 11px 20px;
+  background: #1a73b8;
+  color: white;
+  font-size: 13px;
+  font-weight: 600;
+  cursor: pointer;
+}
+
+@media (max-width: 600px) {
+  .drawer-page { padding-bottom: 70px; }
+  .cell-power { font-size: 10px !important; }
+  .cell-cyl-axis { font-size: 8px !important; }
+  .header-pill { padding: 3px 10px; font-size: 11px; }
+}

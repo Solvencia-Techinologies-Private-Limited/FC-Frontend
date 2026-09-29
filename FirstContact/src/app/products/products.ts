@@ -3,11 +3,12 @@ import { CommonModule } from '@angular/common';
 import { ProductService } from './product-services';
 import { Product } from './product-modal.model';
 import { ContactSelectionMechanism, ProductSelectionModal } from './product-selection-modal/product-selection-modal';
+import { FitsetDrawerComponent } from '../fitset-drawer/fitset-drawer';
 
 @Component({
   selector: 'app-products',
   standalone: true,
-  imports: [CommonModule, ProductSelectionModal],
+  imports: [CommonModule, ProductSelectionModal, FitsetDrawerComponent],
   templateUrl: './products.html',
   styleUrls: ['./products.css'],
 })
@@ -29,6 +30,12 @@ export class Products implements OnInit {
   error = this.errorSign.asReadonly();
   selectedProduct = this.selectedProductSign.asReadonly();
 
+  // --- added ---
+  showFitSetDrawer = false;
+  fitSetProductName = '';
+  fitSetProductImageUrl = '';
+  // -------------
+
   constructor(private productService: ProductService) {}
 
   ngOnInit(): void {
@@ -45,12 +52,13 @@ export class Products implements OnInit {
   }
 
   getImagePath(fileName: string): string {
-  return `/UK%20Packshots/${fileName}`;
- }
+    return `/UK%20Packshots/${fileName}`;
+  }
 
-  // onImageError(event: Event): void {
-  //   (event.target as HTMLImageElement).src = '/assets/images/products/placeholder.jpg';
-  // }
+
+// onImageError(event: Event): void {
+  //   (event.target as HTMLImageElement).src = '/assets/images/products/placeholder.jpg';
+  // }
 
   trackByBrand(_: number, p: Product): string {
     return p['brandId'];
@@ -69,8 +77,24 @@ export class Products implements OnInit {
     if (!product) return;
 
     console.log(`Selected "${mechanism}" for`, product['brandId']);
+
+    if (mechanism === 'FitSet') {
+      this.fitSetProductName = product['brandId'];
+      this.fitSetProductImageUrl = this.getImagePath(product['Image']);
+      this.closeProductModal();
+      this.showFitSetDrawer = true;
+      return;
+    }
+
+    // ContactPicker / ClassicContactPicker fall through here
     this.closeProductModal();
   }
+
+  // --- added ---
+  onFitSetBack(): void {
+    this.showFitSetDrawer = false;
+  }
+  // -------------
 
   removeTrailingNumber(name: string): string {
     return name.replace(/\s+\d+$/, '').trim();
