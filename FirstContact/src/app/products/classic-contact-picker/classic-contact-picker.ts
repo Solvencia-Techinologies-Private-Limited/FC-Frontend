@@ -241,4 +241,8 @@ export class ClassicContactPicker implements OnInit {
   close(): void {
     this.dialogRef.close();
   }
+  
+   toPascalCase(value: string): string {
+    return value.charAt(0).toUpperCase() + value.slice(1);
+  }
 }
