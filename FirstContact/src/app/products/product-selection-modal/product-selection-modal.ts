@@ -1,6 +1,8 @@
 import { Component, EventEmitter, Input, Output } from '@angular/core';
 import { Product } from '../product-modal.model';
 import { ClassicContactPicker } from '../classic-contact-picker/classic-contact-picker';
+import {FullContactPicker} from '../full-contact-picker/full-contact-picker';
+import { FitsetDrawerComponent } from '../fitset-drawer/fitset-drawer';
 import { MatDialog } from '@angular/material/dialog';
 
 @Component({
@@ -33,6 +35,30 @@ export class ProductSelectionModal {
   }
   openClassicContactPicker(product: any): void {
     this.dialog.open(ClassicContactPicker, {
+      width: '100vw',
+      height: '100vh',
+      maxWidth: '100vw',
+      maxHeight: '100vh',
+      data: {
+        brandId: product
+      }
+    });
+  }
+
+  openFullContactPicker(product: any): void {
+    this.dialog.open(FullContactPicker, {
+      width: '100vw',
+      height: '100vh',
+      maxWidth: '100vw',
+      maxHeight: '100vh',
+      data: {
+        brandId: product
+      }
+    });
+  }
+
+  openFitSetPicker(product: any): void {
+    this.dialog.open(FitsetDrawerComponent, {
       width: '100vw',
       height: '100vh',
       maxWidth: '100vw',

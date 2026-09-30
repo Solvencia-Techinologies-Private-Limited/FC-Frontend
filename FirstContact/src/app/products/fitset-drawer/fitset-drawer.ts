@@ -13,6 +13,7 @@ import {
 
 import { HttpClient } from '@angular/common/http';
 import { Subscription } from 'rxjs';
+import { MatDialogRef } from '@angular/material/dialog';
 
 interface Contact {
   [key: string]: any;
@@ -89,7 +90,9 @@ export class FitsetDrawerComponent implements OnInit, OnDestroy, OnChanges {
   // Each gap unit from JSON = this many extra px
   private readonly GAP_UNIT_PX = 12;
 
-  constructor(private http: HttpClient) {}
+  constructor(private http: HttpClient,
+   private readonly dialogRef: MatDialogRef<FitsetDrawerComponent>
+  ) {}
 
   ngOnInit(): void {
     if (this.hasInitialized) return;
@@ -532,5 +535,9 @@ export class FitsetDrawerComponent implements OnInit, OnDestroy, OnChanges {
     );
     console.log('Selected trial items:', selectedItems);
     console.table(selectedItems);
+  }
+
+  close(): void {
+    this.dialogRef.close();
   }
 }

@@ -3,7 +3,7 @@ import { CommonModule } from '@angular/common';
 import { ProductService } from './product-services';
 import { Product } from './product-modal.model';
 import { ProductSelectionModal } from './product-selection-modal/product-selection-modal';
-import { FitsetDrawerComponent } from '../fitset-drawer/fitset-drawer';
+import { FitsetDrawerComponent } from './fitset-drawer/fitset-drawer';
 
 @Component({
   selector: 'app-products',

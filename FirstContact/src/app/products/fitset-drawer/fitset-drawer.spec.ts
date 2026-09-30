@@ -1,17 +1,17 @@
 import { ComponentFixture, TestBed } from '@angular/core/testing';
 
-import { FitsetDrawer } from './fitset-drawer';
+import { FitsetDrawerComponent } from './fitset-drawer';
 
 describe('FitsetDrawer', () => {
-  let component: FitsetDrawer;
-  let fixture: ComponentFixture<FitsetDrawer>;
+  let component: FitsetDrawerComponent;
+  let fixture: ComponentFixture<FitsetDrawerComponent>;
 
   beforeEach(async () => {
     await TestBed.configureTestingModule({
-      imports: [FitsetDrawer],
+      imports: [FitsetDrawerComponent],
     }).compileComponents();
 
-    fixture = TestBed.createComponent(FitsetDrawer);
+    fixture = TestBed.createComponent(FitsetDrawerComponent);
     component = fixture.componentInstance;
     await fixture.whenStable();
   });

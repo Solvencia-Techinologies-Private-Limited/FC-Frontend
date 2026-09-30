@@ -1,8 +1,8 @@
 import { CommonModule } from '@angular/common';
-import {ChangeDetectorRef,Component,Inject,OnInit} from '@angular/core';
-import {MAT_DIALOG_DATA,MatDialogRef} from '@angular/material/dialog';
+import { ChangeDetectorRef, Component, Inject, OnInit } from '@angular/core';
+import { MAT_DIALOG_DATA, MatDialogRef } from '@angular/material/dialog';
 import { ProductService } from '../product-services';
-import {ProductResponse,ProductParameter} from '../product-modal.model';
+import { ProductResponse, ProductParameter } from '../product-modal.model';
 
 @Component({
   selector: 'app-classic-contact-picker',
@@ -22,11 +22,11 @@ export class ClassicContactPicker implements OnInit {
   error = '';
 
   constructor(@Inject(MAT_DIALOG_DATA)
-    public data: { brandId: string },
-    private readonly dialogRef:MatDialogRef<ClassicContactPicker>,
+  public data: { brandId: string },
+    private readonly dialogRef: MatDialogRef<ClassicContactPicker>,
     private readonly changeDetectorRef: ChangeDetectorRef,
     public readonly productService: ProductService
-    ) {}
+  ) { }
 
   ngOnInit(): void {
     const productName = this.data?.brandId;
@@ -64,14 +64,14 @@ export class ClassicContactPicker implements OnInit {
         this.product = productData;
 
         const selectableParameter =
-        this.selectableParameters.find( parameter => !this.isFixedParameter(parameter.name));
+          this.selectableParameters.find(parameter => !this.isFixedParameter(parameter.name));
         this.selectedParameter = selectableParameter?.name ?? '';
         this.loading = false;
         this.changeDetectorRef.detectChanges();
       },
 
       error: error => {
-        this.error ='Unable to load product configuration.';
+        this.error = 'Unable to load product configuration.';
         this.loading = false;
         this.changeDetectorRef.detectChanges();
       }
@@ -79,7 +79,7 @@ export class ClassicContactPicker implements OnInit {
   }
 
   private normalizeProductName(value: string): string {
-    return (value ?? '').trim() .toLowerCase().replace(/[™®©]/g, '').replace(/\s*\([^)]*\)\s*$/, '').replace(/\s+/g, ' ').trim();
+    return (value ?? '').trim().toLowerCase().replace(/[™®©]/g, '').replace(/\s*\([^)]*\)\s*$/, '').replace(/\s+/g, ' ').trim();
   }
 
   get parameters(): ProductParameter[] {
@@ -87,15 +87,9 @@ export class ClassicContactPicker implements OnInit {
       return [];
     }
 
-    return Object.entries(this.product.parameters).filter( ([, values]) => Array.isArray(values) && values.length > 0).map(([name, values]) => ({name, values: values as (string | number)[]}));
+    return Object.entries(this.product.parameters).filter(([, values]) => Array.isArray(values) && values.length > 0).map(([name, values]) => ({ name, values: values as (string | number)[] }));
   }
 
-  get selectableParameters(): ProductParameter[] {
-    return this.parameters.filter(
-      parameter =>
-        !this.isFixedParameter(parameter.name)
-    );
-  }
 
   private isFixedParameter(name: string): boolean {
     return [
@@ -105,6 +99,10 @@ export class ClassicContactPicker implements OnInit {
     ].includes(name);
   }
 
+  get selectableParameters(): ProductParameter[] {
+    return this.parameters;
+  }
+
   get currentParameter(): ProductParameter | null {
     if (!this.selectedParameter) {
       return null;
@@ -112,17 +110,20 @@ export class ClassicContactPicker implements OnInit {
 
     return (
       this.selectableParameters.find(
-        parameter =>
-          parameter.name === this.selectedParameter
+        parameter => parameter.name === this.selectedParameter
       ) ?? null
     );
   }
+
 
   selectParameter(parameter: string): void {
     this.selectedParameter = parameter;
   }
 
-  selectParameterValue(parameterName: string,value: string | number ): void {
+  selectParameterValue(
+    parameterName: string,
+    value: string | number
+  ): void {
     this.selectedValues = {
       ...this.selectedValues,
       [parameterName]: value.toString()
@@ -141,11 +142,11 @@ export class ClassicContactPicker implements OnInit {
   }
 
   get selectedValue(): string {
-    return (
-      this.selectedValues[
-        this.selectedParameter
-      ] ?? ''
-    );
+    if (!this.selectedParameter) {
+      return '';
+    }
+
+    return this.selectedValues[this.selectedParameter] ?? '';
   }
 
   increaseQuantity(): void {
@@ -209,26 +210,31 @@ export class ClassicContactPicker implements OnInit {
     const parameters =
       this.selectableParameters;
 
-    const allSelected =
-      parameters.every(
-        parameter =>
-          !!this.selectedValues[
-            parameter.name
-          ]
-      );
+    const parts = parameters.map(parameter => {
+      const selectedValue = this.selectedValues[parameter.name];
+
+      if (selectedValue != null && selectedValue !== '') {
+        return selectedValue;
+      }
+
+      const values = parameter.values;
+
+      if (Array.isArray(values)) {
+        return values[0]?.toString() ?? '';
+      }
+
+      return String(values ?? '');
+    });
+
+    const allSelected = parts.every(
+      value => value !== ''
+    );
 
     if (!allSelected) {
       return 'Selection: - none -';
     }
 
-    const parts = parameters.map(
-      parameter =>
-        this.selectedValues[
-          parameter.name
-        ] ?? ''
-    );
-
-    return `Selection: ${parts.join(' / ')}`;
+    return `Selection: ${parts.join(' ')}`;
   }
 
   get imageUrl(): string {
@@ -241,8 +247,8 @@ export class ClassicContactPicker implements OnInit {
   close(): void {
     this.dialogRef.close();
   }
-  
-   toPascalCase(value: string): string {
+
+  toPascalCase(value: string): string {
     return value.charAt(0).toUpperCase() + value.slice(1);
   }
 }

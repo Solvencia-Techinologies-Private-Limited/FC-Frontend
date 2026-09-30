@@ -154,3 +154,32 @@ export interface ProductParameter {
   values: (string | number)[];
   label?: string;
 }
+
+export interface Contact {
+  [key: string]: any;
+}
+
+export interface CellGroup {
+  cells: Contact[];
+  gapAfter: number; // extra px gap after this group (from ColumnGaps)
+}
+
+export interface CellRow {
+  groups: CellGroup[];
+  gapBelow: number; // total bottom gap for this row in px (base + extra from RowGaps)
+}
+
+export interface DrawerSection {
+  index: number;
+  header: string;
+  colorClass: string;
+  cellRows: CellRow[];
+  allContacts: Contact[];
+  expanded: boolean;
+}
+
+export interface FitSetRef {
+  productName: string;
+  fitSetName: string;
+  label: string;
+}

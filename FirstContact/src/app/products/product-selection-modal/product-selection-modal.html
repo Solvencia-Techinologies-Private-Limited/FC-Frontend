@@ -13,9 +13,10 @@
     <p class="modal-prompt">Please choose a contact selection mechanism:</p>
 
     <div class="modal-options">
-      <button class="option-btn" (click)="onSelect('ContactPicker')">Contact Picker</button>
+      <button class="option-btn" (click)="openFullContactPicker(product['brandId'])">Contact Picker</button>
       <button class="option-btn" (click)="openClassicContactPicker(product['brandId'])">Classic Contact Picker</button>
-      <button class="option-btn" (click)="onSelect('FitSet')">Fit Set</button>
+      <button class="option-btn" (click)="openFitSetPicker(product['brandId'])">Fit Set</button>
     </div>
+
   </div>
 </div>
