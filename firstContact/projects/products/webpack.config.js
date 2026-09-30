@@ -5,11 +5,11 @@ module.exports = withModuleFederationPlugin({
   name: 'products',
   filename:'remoteEntry.js',
   exposes: {
-    './Component': './projects/products/src/app/app.ts',
+    './Component': './projects/products/src/main.ts',
   },
 
   shared: {
     ...shareAll({ singleton: true, strictVersion: true, requiredVersion: 'auto' }),
   },
-
+  library: {type:'module'}
 });
