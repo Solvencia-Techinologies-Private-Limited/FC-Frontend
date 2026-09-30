@@ -8,7 +8,7 @@ import { FitsetDrawerComponent } from './fitset-drawer/fitset-drawer';
 @Component({
   selector: 'app-products',
   standalone: true,
-  imports: [CommonModule, ProductSelectionModal, FitsetDrawerComponent],
+  imports: [CommonModule, ProductSelectionModal],
   templateUrl: './products.html',
   styleUrls: ['./products.css'],
 })
@@ -71,15 +71,6 @@ export class Products implements OnInit {
     const product = this.selectedProductSign();
     if (!product) return;
 
-    console.log(`Selected "${mechanism}" for`, product['brandId']);
-
-    if (mechanism === 'FitSet') {
-      this.fitSetProductName = product['brandId'];
-      this.fitSetProductImageUrl = this.getImagePath(product['Image']);
-      this.closeProductModal();
-      this.showFitSetDrawer = true;
-      return;
-    }
     this.closeProductModal();
   }
 

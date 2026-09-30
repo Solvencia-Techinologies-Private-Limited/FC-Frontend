@@ -1,19 +1,7 @@
-import {
-  Component,
-  Input,
-  Output,
-  EventEmitter,
-  OnInit,
-  OnDestroy,
-  OnChanges,
-  SimpleChanges,
-  signal,
-  computed
-} from '@angular/core';
-
+import { Component,Input,Output,EventEmitter,OnInit,OnDestroy,signal,computed,Inject} from '@angular/core';
 import { HttpClient } from '@angular/common/http';
 import { Subscription } from 'rxjs';
-import { MatDialogRef } from '@angular/material/dialog';
+import { MAT_DIALOG_DATA, MatDialogRef } from '@angular/material/dialog';
 
 interface Contact {
   [key: string]: any;
@@ -69,7 +57,7 @@ interface FitSetRef {
   templateUrl: './fitset-drawer.html',
   styleUrl: './fitset-drawer.css'
 })
-export class FitsetDrawerComponent implements OnInit, OnDestroy, OnChanges {
+export class FitsetDrawerComponent implements OnInit, OnDestroy {
 
   @Input() productNameInput: string = '';
   @Input() fitSetName: string = '';
@@ -108,8 +96,8 @@ export class FitsetDrawerComponent implements OnInit, OnDestroy, OnChanges {
   private pendingRequest: Subscription | null = null;
 
   
-  // private readonly JSON_URL = '/fitset-catalog/FitSets-GB.json';
-  private readonly JSON_URL = '/fitset-catalog/FitSets-US.json';
+  private readonly JSON_URL = '/fitset-catalog/FitSets-GB.json';
+  // private readonly JSON_URL = '/fitset-catalog/FitSets-US.json';
 
   // ---------------- layout constants (px) ----------------
 
@@ -122,24 +110,18 @@ export class FitsetDrawerComponent implements OnInit, OnDestroy, OnChanges {
   private readonly MAX_SLOTS = 200;       // safety cap for text-only extra rows/columns
 
   constructor(private http: HttpClient,
-   private readonly dialogRef: MatDialogRef<FitsetDrawerComponent>
+   private readonly dialogRef: MatDialogRef<FitsetDrawerComponent>,
+   @Inject(MAT_DIALOG_DATA) public data: { brandId: string }
   ) {}
 
   ngOnInit(): void {
     if (this.hasInitialized) return;
     this.hasInitialized = true;
     this.withData(data => this.initForProduct(data));
+    this.productNameInput = this.data.brandId;
+    this.fitSetName = '';
   }
 
-  ngOnChanges(changes: SimpleChanges): void {
-    const changed =
-      (changes['productNameInput'] && !changes['productNameInput'].firstChange) ||
-      (changes['fitSetName'] && !changes['fitSetName'].firstChange);
-
-    if (this.hasInitialized && changed) {
-      this.withData(data => this.initForProduct(data));
-    }
-  }
 
   ngOnDestroy(): void {
     this.pendingRequest?.unsubscribe();
@@ -149,11 +131,7 @@ export class FitsetDrawerComponent implements OnInit, OnDestroy, OnChanges {
     this.back.emit();
   }
 
-  // ============================================================
-  // DATA LOADING
-  // ============================================================
 
-  // Runs `action` with the JSON, fetching it once and caching it.
   private withData(action: (data: any) => void): void {
     if (this.cachedData) {
       this.loading.set(false);
@@ -198,15 +176,13 @@ export class FitsetDrawerComponent implements OnInit, OnDestroy, OnChanges {
     this.errorMessage.set(name ? `FitSet not available for "${name}".` : 'FitSet not available.');
   }
 
-  // Decides what to show for the product passed in from the parent.
-  // Loads ONLY an exact product match, never a "similar" one.
+
   private initForProduct(data: any): void {
     this.resetSelection();
 
     const wantedFitSet = (this.fitSetName ?? '').trim();
     const wantedProduct = (this.productNameInput ?? '').trim();
 
-    // Optional explicit FitSet override (exact fitset key)
     if (wantedFitSet) {
       const owner = this.findProductOfFitSet(data, wantedFitSet);
       if (owner) {
@@ -244,7 +220,6 @@ export class FitsetDrawerComponent implements OnInit, OnDestroy, OnChanges {
     return String(s ?? '').toLowerCase().replace(/\s+/g, ' ').trim();
   }
 
-  // EXACT match (ignoring letter case and extra spaces only).
   private matchProductName(data: any, displayName: string): string | null {
     if (!data || typeof data !== 'object') return null;
 
@@ -285,28 +260,19 @@ export class FitsetDrawerComponent implements OnInit, OnDestroy, OnChanges {
     );
   }
 
-  // Builds the text shown on a header pill, straight from the fitset name.
-  //   "clariti 1 day toric -1.25 FitSet"           -> "-1.25"
-  //   "Avaira Vitality 108 FitSet"                 -> "108"
-  //   "Biofinity multifocal (Distance) 108 FitSet" -> "Distance 108"
-  //   "Biofinity multifocal (Near) 108 FitSet"     -> "Near 108"
   private extractFitSetLabel(fitSetName: string, productName: string): string {
-    // 1. drop the trailing "FitSet"
     let rest = fitSetName.trim().replace(/\s*fit\s*set\s*$/i, '').trim();
 
-    // 2. drop the product name at the start (case-insensitive)
     const prefix = productName.trim();
     if (prefix && rest.toLowerCase().startsWith(prefix.toLowerCase())) {
       rest = rest.slice(prefix.length).trim();
     } else {
-      // fallback: keep the last number (optionally with a (qualifier))
       const m = rest.match(
         /((?:\([^)]*\)\s*)?[+-]?\d+(?:\.\d+)?(?:\s*\([^)]*\))?)\s*$/
       );
       if (m) rest = m[1].trim();
     }
 
-    // 3. tidy: remove parentheses, collapse spaces
     const label = rest.replace(/[()]/g, '').replace(/\s+/g, ' ').trim();
 
     return label || fitSetName;
@@ -342,12 +308,6 @@ export class FitsetDrawerComponent implements OnInit, OnDestroy, OnChanges {
     this.withData(data => this.selectFitSet(data, fitSetName, this.productName()));
   }
 
-  // ============================================================
-  // JSON CONFIG PARSING
-  // ============================================================
-
-  // Reads a config key from a fitset, ignoring letter case and stray spaces
-  // in the key (e.g. " ColumnGapTexts " still works).
   private cfg(fitSet: any, name: string): any {
     if (!fitSet || typeof fitSet !== 'object') return undefined;
     if (fitSet[name] !== undefined) return fitSet[name];
@@ -359,11 +319,7 @@ export class FitsetDrawerComponent implements OnInit, OnDestroy, OnChanges {
     return undefined;
   }
 
-  // RowGaps / ColumnGaps
-  // Format: array of objects (one per section), e.g. [{ "7": 2, "12": 2 }]
-  // Key   = number of rows (or columns) BEFORE the gap
-  // Value = gap size in units
-  // Keys <= 0 (e.g. "0" and "-1") are special/unused and ignored.
+
   private parseGapConfig(config: any, sectionIndex: number): Map<number, number> {
     const map = new Map<number, number>();
     if (!Array.isArray(config) || config.length === 0) return map;
@@ -434,16 +390,9 @@ export class FitsetDrawerComponent implements OnInit, OnDestroy, OnChanges {
   //   ColumnGaps {"3": 2}, 6 cells  ->  cell cell cell GAP cell cell cell
   // If any text refers to a column slot past the end, extra text-only
   // columns are added on the right (this is how key "7" in ColumnGapTexts works).
-  private buildColumnSlots(
-    itemsPerRow: number,
-    colGapUnits: Map<number, number>,
-    rowTexts: TextMap,
-    colTexts: TextMap
-  ): ColSlot[] {
+  private buildColumnSlots(itemsPerRow: number, colGapUnits: Map<number, number>, rowTexts: TextMap,colTexts: TextMap): ColSlot[] {
     const slots: ColSlot[] = [];
 
-    // Gap size: total visual gap = ROW_GAP_PX + units * GAP_UNIT_PX.
-    // The grid already adds CELL_GAP_PX on each side of the track.
     const gapPx = (units: number) =>
       Math.max(0, this.ROW_GAP_PX + units * this.GAP_UNIT_PX - 2 * this.CELL_GAP_PX);
 
@@ -453,7 +402,6 @@ export class FitsetDrawerComponent implements OnInit, OnDestroy, OnChanges {
       if (c < itemsPerRow) slots.push({ kind: 'cell', cellIndex: c, px: 0 });
     }
 
-    // Extra text-only columns after the last slot
     let maxRef = this.maxIntKey(Object.keys(colTexts));
     for (const inner of Object.values(rowTexts)) {
       maxRef = Math.max(maxRef, this.maxIntKey(Object.keys(inner)));
@@ -463,7 +411,6 @@ export class FitsetDrawerComponent implements OnInit, OnDestroy, OnChanges {
       slots.push({ kind: 'gap', cellIndex: -1, px: 0 });
     }
 
-    // Make every text column wide enough for its longest text
     slots.forEach((slot, i) => {
       if (slot.kind !== 'gap') return;
 
