@@ -19,21 +19,39 @@ interface Contact {
   [key: string]: any;
 }
 
-interface CellGroup {
-  cells: Contact[];
-  gapAfter: number; // extra px gap after this group (from ColumnGaps)
+// 'cell'  = a real cell position
+// 'gap'   = a column-gap / text column slot
+// 'blank' = a cell position with no contact (short last row)
+type SlotKind = 'cell' | 'gap' | 'blank';
+
+interface Slot {
+  kind: SlotKind;
+  contact: Contact;
+  empty: boolean;   // contact exists but has no data -> disabled
+  text: string;     // text shown in gap slots (ColumnRowTexts / ColumnGapTexts)
 }
 
-interface CellRow {
-  groups: CellGroup[];
-  gapBelow: number; // total bottom gap for this row in px (base + extra from RowGaps)
+interface RenderRow {
+  kind: 'cells' | 'gap';
+  slots: Slot[];
+  height: number;   // px, only used by gap rows
 }
+
+interface ColSlot {
+  kind: 'cell' | 'gap';
+  cellIndex: number; // valid when kind === 'cell'
+  px: number;        // valid when kind === 'gap'
+}
+
+// { outerKey: { innerKey: text } }
+type TextMap = { [outer: string]: { [inner: string]: string } };
 
 interface DrawerSection {
   index: number;
   header: string;
   colorClass: string;
-  cellRows: CellRow[];
+  gridTemplate: string; // CSS grid-template-columns shared by every row
+  rows: RenderRow[];
   allContacts: Contact[];
   expanded: boolean;
 }
@@ -59,19 +77,23 @@ export class FitsetDrawerComponent implements OnInit, OnDestroy, OnChanges {
 
   @Output() back = new EventEmitter<void>();
 
+  // ---------------- reactive state ----------------
+
   loading = signal<boolean>(true);
   errorMessage = signal<string>('');
+
   productFitSets = signal<FitSetRef[]>([]);
   productName = signal<string>('');
   selectedFitSetName = signal<string>('');
   selectedFitSet = signal<any>(null);
+
   numberOfItemsPerRow = signal<number>(3);
   trialSize = signal<any>('');
+
   useCompactCells = signal<boolean>(false);
   useDrawerLayout = signal<boolean>(false);
+
   drawers = signal<DrawerSection[]>([]);
-  cylValues = signal<string[]>([]);
-  selectedCyl = signal<string>('');
 
   selectedQuantities = signal<Map<Contact, number>>(new Map());
 
@@ -85,10 +107,19 @@ export class FitsetDrawerComponent implements OnInit, OnDestroy, OnChanges {
   private hasInitialized = false;
   private pendingRequest: Subscription | null = null;
 
-  // Base gap between cells in px
-  private readonly BASE_GAP_PX = 6;
-  // Each gap unit from JSON = this many extra px
-  private readonly GAP_UNIT_PX = 12;
+  
+  // private readonly JSON_URL = '/fitset-catalog/FitSets-GB.json';
+  private readonly JSON_URL = '/fitset-catalog/FitSets-US.json';
+
+  // ---------------- layout constants (px) ----------------
+
+  private readonly ROW_GAP_PX = 6;        // vertical space between normal rows
+  private readonly CELL_GAP_PX = 4;       // horizontal space between tracks (matches CSS column-gap)
+  private readonly GAP_UNIT_PX = 12;      // one JSON gap "unit"
+  private readonly MIN_TEXT_GAP_PX = 18;  // minimum height of a row gap that holds text
+  private readonly MIN_TEXT_COL_PX = 44;  // minimum width of a column that holds text
+  private readonly TEXT_CHAR_PX = 7.5;    // approx width of one character of gap text
+  private readonly MAX_SLOTS = 200;       // safety cap for text-only extra rows/columns
 
   constructor(private http: HttpClient,
    private readonly dialogRef: MatDialogRef<FitsetDrawerComponent>
@@ -97,18 +128,16 @@ export class FitsetDrawerComponent implements OnInit, OnDestroy, OnChanges {
   ngOnInit(): void {
     if (this.hasInitialized) return;
     this.hasInitialized = true;
-    this.loadFitSets();
+    this.withData(data => this.initForProduct(data));
   }
 
   ngOnChanges(changes: SimpleChanges): void {
-    if (
-      this.hasInitialized &&
-      changes['productNameInput'] &&
-      !changes['productNameInput'].firstChange &&
-      this.cachedData
-    ) {
-      this.buildFitSetList(this.cachedData);
-      this.applyInitialSelection(this.cachedData);
+    const changed =
+      (changes['productNameInput'] && !changes['productNameInput'].firstChange) ||
+      (changes['fitSetName'] && !changes['fitSetName'].firstChange);
+
+    if (this.hasInitialized && changed) {
+      this.withData(data => this.initForProduct(data));
     }
   }
 
@@ -116,332 +145,499 @@ export class FitsetDrawerComponent implements OnInit, OnDestroy, OnChanges {
     this.pendingRequest?.unsubscribe();
   }
 
-  onBack(): void { this.back.emit(); }
+  onBack(): void {
+    this.back.emit();
+  }
 
-  loadFitSets(): void {
+  // ============================================================
+  // DATA LOADING
+  // ============================================================
+
+  // Runs `action` with the JSON, fetching it once and caching it.
+  private withData(action: (data: any) => void): void {
     if (this.cachedData) {
-      this.buildFitSetList(this.cachedData);
-      this.applyInitialSelection(this.cachedData);
+      this.loading.set(false);
+      action(this.cachedData);
       return;
     }
+
     this.loading.set(true);
     this.errorMessage.set('');
     this.pendingRequest?.unsubscribe();
-    this.pendingRequest = this.http.get<any>('/fitset-catalog/FitSets-GB.json').subscribe({
+
+    this.pendingRequest = this.http.get<any>(this.JSON_URL).subscribe({
       next: (data) => {
         this.cachedData = data;
-        this.buildFitSetList(data);
-        this.applyInitialSelection(data);
+        action(data);
         this.loading.set(false);
       },
       error: () => {
-        this.errorMessage.set('Could not load FitSets-GB.json.');
+        this.errorMessage.set(`Could not load ${this.JSON_URL}.`);
         this.loading.set(false);
       }
     });
   }
 
-  private applyInitialSelection(data: any): void {
-    let initialFitSet = this.fitSetName;
-    let matchedProduct = '';
-    if (!initialFitSet && this.productNameInput) {
-      const matched = this.matchProductName(data, this.productNameInput);
-      if (matched) {
-        matchedProduct = matched;
-        const keys = Object.keys(data[matched]?.FitSets ?? {});
-        if (keys.length > 0) initialFitSet = keys[0];
-      } else {
-        this.errorMessage.set(`No FitSet data found for "${this.productNameInput}".`);
-      }
-    }
-    if (!initialFitSet) {
-      const list = this.productFitSets();
-      if (list.length > 0) initialFitSet = list[0].fitSetName;
-    }
-    this.selectFitSet(data, initialFitSet, matchedProduct);
+  private resetSelection(): void {
+    this.errorMessage.set('');
+    this.productName.set('');
+    this.selectedFitSetName.set('');
+    this.selectedFitSet.set(null);
+    this.productFitSets.set([]);
+    this.drawers.set([]);
+    this.useDrawerLayout.set(false);
+    this.selectedQuantities.set(new Map());
   }
 
+  private showNotAvailable(name: string): void {
+    this.productName.set(name);
+    this.selectedFitSet.set(null);
+    this.selectedFitSetName.set('');
+    this.productFitSets.set([]);
+    this.drawers.set([]);
+    this.errorMessage.set(name ? `FitSet not available for "${name}".` : 'FitSet not available.');
+  }
+
+  // Decides what to show for the product passed in from the parent.
+  // Loads ONLY an exact product match, never a "similar" one.
+  private initForProduct(data: any): void {
+    this.resetSelection();
+
+    const wantedFitSet = (this.fitSetName ?? '').trim();
+    const wantedProduct = (this.productNameInput ?? '').trim();
+
+    // Optional explicit FitSet override (exact fitset key)
+    if (wantedFitSet) {
+      const owner = this.findProductOfFitSet(data, wantedFitSet);
+      if (owner) {
+        this.buildFitSetList(data, owner);
+        this.selectFitSet(data, wantedFitSet, owner);
+      } else {
+        this.showNotAvailable(wantedFitSet);
+      }
+      return;
+    }
+
+    if (!wantedProduct) {
+      this.showNotAvailable('');
+      return;
+    }
+
+    const matched = this.matchProductName(data, wantedProduct);
+    if (!matched) {
+      this.showNotAvailable(wantedProduct);
+      return;
+    }
+
+    this.buildFitSetList(data, matched);
+
+    const first = this.productFitSets()[0];
+    if (!first) {
+      this.showNotAvailable(wantedProduct);
+      return;
+    }
+
+    this.selectFitSet(data, first.fitSetName, matched);
+  }
+
+  private normalizeName(s: string): string {
+    return String(s ?? '').toLowerCase().replace(/\s+/g, ' ').trim();
+  }
+
+  // EXACT match (ignoring letter case and extra spaces only).
   private matchProductName(data: any, displayName: string): string | null {
     if (!data || typeof data !== 'object') return null;
-    const normalize = (s: string) => s.toLowerCase().replace(/[^a-z0-9\s]/g, '').trim();
-    const target = normalize(displayName);
+
+    const target = this.normalizeName(displayName);
+
     for (const pn of Object.keys(data)) {
-      if (!data[pn]?.FitSets) continue;
-      if (normalize(pn) === target) return pn;
+      if (!data[pn]?.FitSets) continue;   // skips keys like "version"
+      if (this.normalizeName(pn) === target) return pn;
     }
-    const targetWords = target.split(/\s+/).filter(w => w.length > 1);
-    for (const pn of Object.keys(data)) {
-      if (!data[pn]?.FitSets) continue;
-      const pnNorm = normalize(pn);
-      if (targetWords.every(w => pnNorm.includes(w))) return pn;
-    }
-    for (const pn of Object.keys(data)) {
-      if (!data[pn]?.FitSets) continue;
-      const pnWords = normalize(pn).split(/\s+/).filter(w => w.length > 1);
-      if (pnWords.length >= 2 && pnWords.every(w => target.includes(w))) return pn;
-    }
+
     return null;
   }
 
-  buildFitSetList(data: any): void {
-    if (!data || typeof data !== 'object') return;
-    const matchedProductName = this.productNameInput
-      ? this.matchProductName(data, this.productNameInput)
-      : null;
-    const list: FitSetRef[] = [];
-    const toScan = matchedProductName ? [matchedProductName] : Object.keys(data);
-    for (const pn of toScan) {
-      const product = data[pn];
-      if (!product?.FitSets || typeof product.FitSets !== 'object') continue;
-      for (const fsName of Object.keys(product.FitSets)) {
-        list.push({
-          productName: pn,
-          fitSetName: fsName,
-          label: this.extractFitSetLabel(fsName)
-        });
-      }
+  private findProductOfFitSet(data: any, fitSetName: string): string | null {
+    if (!data || typeof data !== 'object') return null;
+
+    for (const pn of Object.keys(data)) {
+      if (data[pn]?.FitSets?.[fitSetName]) return pn;
     }
-    this.productFitSets.set(list);
+
+    return null;
   }
 
-  // Extracts a label for the fitset pill button.
-  // Priority:
-  // 1. Number before FitSet + D/N suffix if present
-  //    "Biofinity 309 Distance FitSet" -> "309 D"
-  //    "Biofinity 309 Near FitSet"     -> "309 N"
-  //    "Avaira Vitality 108 FitSet"    -> "108"
-  // 2. Full name if no number found
-  private extractFitSetLabel(fitSetName: string): string {
-    // Check for Distance/Near qualifiers
-    const distanceMatch = fitSetName.match(/\b(\d+)\s+Distance\s+FitSet\b/i);
-    if (distanceMatch) return `${distanceMatch[1]} D`;
+  private buildFitSetList(data: any, productName: string): void {
+    const fitSets = data?.[productName]?.FitSets;
 
-    const nearMatch = fitSetName.match(/\b(\d+)\s+Near\s+FitSet\b/i);
-    if (nearMatch) return `${nearMatch[1]} N`;
-
-    // Generic number extraction
-    const numMatch = fitSetName.match(/\b(\d+)\s+FitSet\b/i);
-    if (numMatch) return numMatch[1];
-
-    return fitSetName;
-  }
-
-  selectFitSet(data: any, fitSetName: string, productName?: string): void {
-    let result: { productName: string; fitSetName: string; fitSet: any } | null = null;
-    if (productName && data?.[productName]?.FitSets?.[fitSetName]) {
-      result = { productName, fitSetName, fitSet: data[productName].FitSets[fitSetName] };
-    }
-    if (!result) {
-      for (const pn of Object.keys(data ?? {})) {
-        const product = data[pn];
-        if (!product?.FitSets) continue;
-        if (product.FitSets[fitSetName]) {
-          result = { productName: pn, fitSetName, fitSet: product.FitSets[fitSetName] };
-          break;
-        }
-      }
-    }
-    if (!result) {
-      this.errorMessage.set(`FitSet "${fitSetName}" was not found.`);
+    if (!fitSets || typeof fitSets !== 'object') {
+      this.productFitSets.set([]);
       return;
     }
-    this.productName.set(result.productName);
-    this.selectedFitSetName.set(result.fitSetName);
-    this.selectedFitSet.set(result.fitSet);
-    const itemsPerRow = Number(result.fitSet?.NumberOfItemsPerRow ?? 0) || 3;
+
+    this.productFitSets.set(
+      Object.keys(fitSets).map(fsName => ({
+        productName,
+        fitSetName: fsName,
+        label: this.extractFitSetLabel(fsName, productName)
+      }))
+    );
+  }
+
+  // Builds the text shown on a header pill, straight from the fitset name.
+  //   "clariti 1 day toric -1.25 FitSet"           -> "-1.25"
+  //   "Avaira Vitality 108 FitSet"                 -> "108"
+  //   "Biofinity multifocal (Distance) 108 FitSet" -> "Distance 108"
+  //   "Biofinity multifocal (Near) 108 FitSet"     -> "Near 108"
+  private extractFitSetLabel(fitSetName: string, productName: string): string {
+    // 1. drop the trailing "FitSet"
+    let rest = fitSetName.trim().replace(/\s*fit\s*set\s*$/i, '').trim();
+
+    // 2. drop the product name at the start (case-insensitive)
+    const prefix = productName.trim();
+    if (prefix && rest.toLowerCase().startsWith(prefix.toLowerCase())) {
+      rest = rest.slice(prefix.length).trim();
+    } else {
+      // fallback: keep the last number (optionally with a (qualifier))
+      const m = rest.match(
+        /((?:\([^)]*\)\s*)?[+-]?\d+(?:\.\d+)?(?:\s*\([^)]*\))?)\s*$/
+      );
+      if (m) rest = m[1].trim();
+    }
+
+    // 3. tidy: remove parentheses, collapse spaces
+    const label = rest.replace(/[()]/g, '').replace(/\s+/g, ' ').trim();
+
+    return label || fitSetName;
+  }
+
+  selectFitSet(data: any, fitSetName: string, productName: string): void {
+    const fitSet = data?.[productName]?.FitSets?.[fitSetName];
+
+    if (!fitSet) {
+      this.showNotAvailable(this.productNameInput || productName);
+      return;
+    }
+
+    this.errorMessage.set('');
+    this.productName.set(productName);
+    this.selectedFitSetName.set(fitSetName);
+    this.selectedFitSet.set(fitSet);
+
+    const itemsPerRow = Number(this.cfg(fitSet, 'NumberOfItemsPerRow') ?? 0) || 3;
     this.numberOfItemsPerRow.set(itemsPerRow);
-    this.trialSize.set(result.fitSet?.TrialSize ?? '');
+    this.trialSize.set(this.cfg(fitSet, 'TrialSize') ?? '');
     this.useCompactCells.set(itemsPerRow > 3);
+
     this.selectedQuantities.set(new Map());
-    this.buildCylFilter(result.fitSet);
-    this.buildDrawers(result.fitSet, itemsPerRow);
+
+    this.buildDrawers(fitSet, itemsPerRow);
   }
 
   changeFitSet(fitSetName: string): void {
     if (this.selectedFitSetName() === fitSetName) return;
+
     this.errorMessage.set('');
-    if (this.cachedData) {
-      this.selectFitSet(this.cachedData, fitSetName, this.productName());
-      return;
+    this.withData(data => this.selectFitSet(data, fitSetName, this.productName()));
+  }
+
+  // ============================================================
+  // JSON CONFIG PARSING
+  // ============================================================
+
+  // Reads a config key from a fitset, ignoring letter case and stray spaces
+  // in the key (e.g. " ColumnGapTexts " still works).
+  private cfg(fitSet: any, name: string): any {
+    if (!fitSet || typeof fitSet !== 'object') return undefined;
+    if (fitSet[name] !== undefined) return fitSet[name];
+
+    const wanted = name.trim().toLowerCase();
+    for (const key of Object.keys(fitSet)) {
+      if (key.trim().toLowerCase() === wanted) return fitSet[key];
     }
-    this.loading.set(true);
-    this.pendingRequest?.unsubscribe();
-    this.pendingRequest = this.http.get<any>('/fitset-catalog/FitSets-GB.json').subscribe({
-      next: (data) => {
-        this.cachedData = data;
-        this.buildFitSetList(data);
-        this.selectFitSet(data, fitSetName, this.productName());
-        this.loading.set(false);
-      },
-      error: () => {
-        this.errorMessage.set('Could not load FitSet.');
-        this.loading.set(false);
+    return undefined;
+  }
+
+  // RowGaps / ColumnGaps
+  // Format: array of objects (one per section), e.g. [{ "7": 2, "12": 2 }]
+  // Key   = number of rows (or columns) BEFORE the gap
+  // Value = gap size in units
+  // Keys <= 0 (e.g. "0" and "-1") are special/unused and ignored.
+  private parseGapConfig(config: any, sectionIndex: number): Map<number, number> {
+    const map = new Map<number, number>();
+    if (!Array.isArray(config) || config.length === 0) return map;
+
+    const entry = config[sectionIndex] ?? config[0] ?? {};
+
+    for (const [key, value] of Object.entries(entry)) {
+      const k = Number(String(key).trim());
+      const v = Number(value);
+      if (!isNaN(k) && k > 0 && !isNaN(v) && v > 0) {
+        map.set(k, v);
       }
+    }
+
+    return map;
+  }
+
+  // ColumnRowTexts / ColumnGapTexts
+  // Format: array of objects (one per section):
+  //   [{ "outerKey": { "innerKey": "text", ... }, ... }]
+  //
+  //   ColumnRowTexts: outerKey = ROW slot,    innerKey = COLUMN slot
+  //   ColumnGapTexts: outerKey = COLUMN slot, innerKey = ROW slot
+  //
+  // Slots count cells AND gaps (see buildColumnSlots / buildRows).
+  private parseTexts(config: any, sectionIndex: number): TextMap {
+    const out: TextMap = {};
+    if (!Array.isArray(config) || config.length === 0) return out;
+
+    const entry = config[sectionIndex] ?? config[0] ?? {};
+
+    for (const [outerKey, inner] of Object.entries(entry)) {
+      if (!inner || typeof inner !== 'object') continue;
+
+      const o = String(outerKey).trim();
+      out[o] = out[o] ?? {};
+
+      for (const [innerKey, text] of Object.entries(inner as object)) {
+        out[o][String(innerKey).trim()] = String(text ?? '');
+      }
+    }
+
+    return out;
+  }
+
+  // Text for the intersection of a row slot and a column slot.
+  private textAt(rowSlot: number, colSlot: number, rowTexts: TextMap, colTexts: TextMap): string {
+    const fromRowTexts = rowTexts[String(rowSlot)]?.[String(colSlot)];
+    if (fromRowTexts !== undefined && fromRowTexts !== '') return fromRowTexts;
+
+    return colTexts[String(colSlot)]?.[String(rowSlot)] ?? '';
+  }
+
+  private maxIntKey(keys: string[]): number {
+    let max = -1;
+    for (const k of keys) {
+      const n = Number(k);
+      if (Number.isInteger(n) && n > max) max = n;
+    }
+    return max;
+  }
+
+  // ============================================================
+  // GRID CONSTRUCTION
+  // ============================================================
+
+  // Ordered column slots for one row.
+  //   ColumnGaps {"3": 2}, 6 cells  ->  cell cell cell GAP cell cell cell
+  // If any text refers to a column slot past the end, extra text-only
+  // columns are added on the right (this is how key "7" in ColumnGapTexts works).
+  private buildColumnSlots(
+    itemsPerRow: number,
+    colGapUnits: Map<number, number>,
+    rowTexts: TextMap,
+    colTexts: TextMap
+  ): ColSlot[] {
+    const slots: ColSlot[] = [];
+
+    // Gap size: total visual gap = ROW_GAP_PX + units * GAP_UNIT_PX.
+    // The grid already adds CELL_GAP_PX on each side of the track.
+    const gapPx = (units: number) =>
+      Math.max(0, this.ROW_GAP_PX + units * this.GAP_UNIT_PX - 2 * this.CELL_GAP_PX);
+
+    for (let c = 0; c <= itemsPerRow; c++) {
+      const units = colGapUnits.get(c);
+      if (units) slots.push({ kind: 'gap', cellIndex: -1, px: gapPx(units) });
+      if (c < itemsPerRow) slots.push({ kind: 'cell', cellIndex: c, px: 0 });
+    }
+
+    // Extra text-only columns after the last slot
+    let maxRef = this.maxIntKey(Object.keys(colTexts));
+    for (const inner of Object.values(rowTexts)) {
+      maxRef = Math.max(maxRef, this.maxIntKey(Object.keys(inner)));
+    }
+
+    while (slots.length <= maxRef && slots.length < this.MAX_SLOTS) {
+      slots.push({ kind: 'gap', cellIndex: -1, px: 0 });
+    }
+
+    // Make every text column wide enough for its longest text
+    slots.forEach((slot, i) => {
+      if (slot.kind !== 'gap') return;
+
+      const longest = this.longestTextForColumn(i, rowTexts, colTexts);
+      if (longest > 0) {
+        const textPx = Math.max(
+          this.MIN_TEXT_COL_PX,
+          Math.ceil(longest * this.TEXT_CHAR_PX) + 8
+        );
+        slot.px = Math.max(slot.px, textPx);
+      }
+    });
+
+    return slots;
+  }
+
+  private longestTextForColumn(slotIndex: number, rowTexts: TextMap, colTexts: TextMap): number {
+    let longest = 0;
+
+    const own = colTexts[String(slotIndex)];
+    if (own) {
+      for (const t of Object.values(own)) longest = Math.max(longest, String(t).length);
+    }
+
+    for (const inner of Object.values(rowTexts)) {
+      const t = inner[String(slotIndex)];
+      if (t !== undefined) longest = Math.max(longest, String(t).length);
+    }
+
+    return longest;
+  }
+
+  // Builds every row of a section: cell rows and gap rows, in order.
+  // Row slots count rows AND gap rows.
+  //   RowGaps {"7":2,"12":2,"18":1}, 18 rows -> rows 0-6, GAP 7, rows 8-12, GAP 13, rows 14-19, GAP 20
+  // If any text refers to a row slot past the end, extra text rows are added.
+  private buildRows(
+    flat: Contact[],
+    itemsPerRow: number,
+    colSlots: ColSlot[],
+    rowGapUnits: Map<number, number>,
+    rowTexts: TextMap,
+    colTexts: TextMap
+  ): RenderRow[] {
+
+    const totalRows = Math.ceil(flat.length / itemsPerRow);
+
+    type Desc =
+      | { kind: 'cells'; rowIndex: number }
+      | { kind: 'gap'; units: number };
+
+    const descs: Desc[] = [];
+
+    for (let r = 0; r <= totalRows; r++) {
+      const units = rowGapUnits.get(r);
+      if (units) descs.push({ kind: 'gap', units });
+      if (r < totalRows) descs.push({ kind: 'cells', rowIndex: r });
+    }
+
+    // Extra text-only rows after the last slot
+    let maxRef = this.maxIntKey(Object.keys(rowTexts));
+    for (const inner of Object.values(colTexts)) {
+      maxRef = Math.max(maxRef, this.maxIntKey(Object.keys(inner)));
+    }
+
+    while (descs.length <= maxRef && descs.length < this.MAX_SLOTS) {
+      descs.push({ kind: 'gap', units: 0 });
+    }
+
+    return descs.map((d, rowSlot): RenderRow => {
+
+      if (d.kind === 'gap') {
+        const slots: Slot[] = colSlots.map((cs, colSlot): Slot => ({
+          kind: cs.kind,
+          contact: {},
+          empty: false,
+          text: this.textAt(rowSlot, colSlot, rowTexts, colTexts)
+        }));
+
+        // Total visual gap = ROW_GAP_PX + units * GAP_UNIT_PX.
+        // The rows container already adds ROW_GAP_PX above and below.
+        let height = Math.max(0, d.units * this.GAP_UNIT_PX - this.ROW_GAP_PX);
+        if (slots.some(s => s.text !== '')) {
+          height = Math.max(height, this.MIN_TEXT_GAP_PX);
+        }
+
+        return { kind: 'gap', height, slots };
+      }
+
+      const rowContacts = flat.slice(
+        d.rowIndex * itemsPerRow,
+        (d.rowIndex + 1) * itemsPerRow
+      );
+
+      const slots: Slot[] = colSlots.map((cs, colSlot): Slot => {
+
+        // gap column inside a cell row -> may hold ColumnGapTexts text
+        if (cs.kind === 'gap') {
+          return {
+            kind: 'gap',
+            contact: {},
+            empty: false,
+            text: this.textAt(rowSlot, colSlot, rowTexts, colTexts)
+          };
+        }
+
+        const contact = rowContacts[cs.cellIndex];
+
+        // short last row -> invisible placeholder
+        if (contact === undefined) {
+          return { kind: 'blank', contact: {}, empty: false, text: '' };
+        }
+
+        return {
+          kind: 'cell',
+          contact,
+          empty: this.isEmptyContact(contact),
+          text: ''
+        };
+      });
+
+      return { kind: 'cells', height: 0, slots };
     });
   }
 
-  private buildCylFilter(fitSet: any): void {
-    const contacts = fitSet?.Contacts;
-    if (!Array.isArray(contacts) || contacts.length > 1) {
-      this.cylValues.set([]);
-      this.selectedCyl.set('');
-      return;
-    }
-    const flat: Contact[] = contacts[0]?.flat(Infinity) ?? [];
-    const cylSet = new Set<string>();
-    flat.forEach(c => { const cyl = String(c?.['Cyl'] ?? ''); if (cyl) cylSet.add(cyl); });
-    if (cylSet.size === 0) { this.cylValues.set([]); this.selectedCyl.set(''); return; }
-    const itemsPerRow = Number(fitSet?.NumberOfItemsPerRow ?? 0) || 3;
-    const totalRows = Math.ceil(flat.length / itemsPerRow);
-    let firstCount = -1;
-    let allSame = true;
-    for (const cyl of cylSet) {
-      const count = flat.filter(c => String(c?.['Cyl'] ?? '') === cyl).length;
-      if (firstCount === -1) firstCount = count;
-      if (count !== firstCount) { allSame = false; break; }
-    }
-    const expectedPerCyl = flat.length / cylSet.size;
-    if (allSame && firstCount === expectedPerCyl && firstCount <= totalRows * cylSet.size) {
-      const sorted = Array.from(cylSet).sort((a, b) => Number(a) - Number(b));
-      this.cylValues.set(sorted);
-      this.selectedCyl.set(sorted[0]);
-    } else {
-      this.cylValues.set([]);
-      this.selectedCyl.set('');
-    }
-  }
-
-  selectCyl(cyl: string): void {
-    this.selectedCyl.set(cyl);
-    if (this.selectedFitSet()) this.buildDrawers(this.selectedFitSet(), this.numberOfItemsPerRow());
-  }
-
-  // ============================================================
-  // GAP PARSING
-  // ============================================================
-  //
-  // RowGaps format: array of objects, one per section.
-  // Keys are 1-based row numbers. Values are gap "units".
-  // Special keys: -1 = reduce gap (we ignore/clamp), 0 = default for all rows.
-  // We convert: gapPx = BASE_GAP_PX + (value * GAP_UNIT_PX)
-  //
-  // ColumnGaps format: array of objects, one per section.
-  // Keys are 1-based column indices after which to insert extra space.
-  // e.g. { "2": 2, "4": 2 } with 6 columns means:
-  //   [col1 col2] --gap-- [col3 col4] --gap-- [col5 col6]
-  //
-  // The gap value determines the spacer div width:
-  //   spacerWidth = BASE_GAP_PX + (value * GAP_UNIT_PX)
-  //
-  // This matches the visual in Image 1 where the column sub-groups
-  // are clearly separated by a wider gap than the cell-to-cell gap.
-
-  private parseRowGapMap(rowGapsConfig: any, sectionIndex: number): Map<number, number> {
-    const map = new Map<number, number>();
-    if (!Array.isArray(rowGapsConfig) || rowGapsConfig.length === 0) return map;
-    const config = rowGapsConfig[sectionIndex] ?? rowGapsConfig[0] ?? {};
-    for (const [key, value] of Object.entries(config)) {
-      const k = Number(key);
-      const v = Number(value);
-      // Skip special keys -1 (reduce) and 0 (default) — handle separately if needed
-      if (!isNaN(k) && k > 0 && !isNaN(v) && v > 0) {
-        // Convert gap units to pixels: base + (units * GAP_UNIT_PX)
-        map.set(k, this.BASE_GAP_PX + (v * this.GAP_UNIT_PX));
-      }
-    }
-    return map;
-  }
-
-  private parseColumnGapMap(colGapsConfig: any, sectionIndex: number): Map<number, number> {
-    const map = new Map<number, number>();
-    if (!Array.isArray(colGapsConfig) || colGapsConfig.length === 0) return map;
-    const config = colGapsConfig[sectionIndex] ?? colGapsConfig[0] ?? {};
-    for (const [key, value] of Object.entries(config)) {
-      const k = Number(key);
-      const v = Number(value);
-      if (!isNaN(k) && k > 0 && !isNaN(v) && v > 0) {
-        // Spacer width = base gap + (units * GAP_UNIT_PX)
-        map.set(k, this.BASE_GAP_PX + (v * this.GAP_UNIT_PX));
-      }
-    }
-    return map;
-  }
-
-  // Splits a flat row of cells into CellGroups based on ColumnGaps break points.
-  // ColumnGaps { "2": 2, "4": 2 } with 6 cells creates 3 groups:
-  //   Group[0]: cells 0-1, gapAfter: 30px (6 + 2*12)
-  //   Group[1]: cells 2-3, gapAfter: 30px
-  //   Group[2]: cells 4-5, gapAfter: 0 (last group)
-  private splitRowIntoGroups(cells: Contact[], colGapMap: Map<number, number>): CellGroup[] {
-    if (colGapMap.size === 0) {
-      return [{ cells, gapAfter: 0 }];
-    }
-    const groups: CellGroup[] = [];
-    const breakPoints = Array.from(colGapMap.keys()).sort((a, b) => a - b);
-    let start = 0;
-    for (const bp of breakPoints) {
-      if (bp > start && start < cells.length) {
-        groups.push({ cells: cells.slice(start, bp), gapAfter: colGapMap.get(bp) ?? 0 });
-        start = bp;
-      }
-    }
-    if (start < cells.length) {
-      groups.push({ cells: cells.slice(start), gapAfter: 0 });
-    }
-    return groups.length > 0 ? groups : [{ cells, gapAfter: 0 }];
-  }
-
-  // ============================================================
-  // DRAWER CONSTRUCTION
-  // ============================================================
-
   private buildDrawers(fitSet: any, itemsPerRow: number): void {
-    const contacts = fitSet?.Contacts;
+    const contacts = this.cfg(fitSet, 'Contacts');
+
     if (!Array.isArray(contacts)) {
       this.drawers.set([]);
       this.useDrawerLayout.set(false);
       return;
     }
+
     const multiDrawer = contacts.length > 1;
     this.useDrawerLayout.set(multiDrawer);
-    const headers: string[] = Array.isArray(fitSet?.SectionHeaders) ? fitSet.SectionHeaders : [];
-    const headerColors: string[] = Array.isArray(fitSet?.SectionHeaderColors) ? fitSet.SectionHeaderColors : [];
-    const rowGapsConfig = fitSet?.RowGaps ?? [];
-    const colGapsConfig = fitSet?.ColumnGaps ?? [];
-    const selectedCyl = this.selectedCyl();
+
+    const headersCfg = this.cfg(fitSet, 'SectionHeaders');
+    const colorsCfg = this.cfg(fitSet, 'SectionHeaderColors');
+    const headers: string[] = Array.isArray(headersCfg) ? headersCfg : [];
+    const headerColors: string[] = Array.isArray(colorsCfg) ? colorsCfg : [];
+
+    const rowGapsCfg = this.cfg(fitSet, 'RowGaps');
+    const colGapsCfg = this.cfg(fitSet, 'ColumnGaps');
+    const rowTextsCfg = this.cfg(fitSet, 'ColumnRowTexts');
+    const colTextsCfg = this.cfg(fitSet, 'ColumnGapTexts');
 
     const built: DrawerSection[] = contacts.map((sectionContacts: any, index: number) => {
-      let flat: Contact[] = Array.isArray(sectionContacts)
-        ? (sectionContacts.flat(Infinity) as Contact[])
-        : [];
-      if (!multiDrawer && selectedCyl) {
-        flat = flat.filter(c => String(c?.['Cyl'] ?? '') === selectedCyl);
-      }
 
-      const rowGapMap = this.parseRowGapMap(rowGapsConfig, index);
-      const colGapMap = this.parseColumnGapMap(colGapsConfig, index);
+      const flat: Contact[] = (
+        Array.isArray(sectionContacts) ? sectionContacts.flat(Infinity) : []
+      ).map((c: any) => c ?? {}) as Contact[];
 
-      const cellRows: CellRow[] = [];
-      let flatIndex = 0;
-      let rowNumber = 0;
+      const rowGapUnits = this.parseGapConfig(rowGapsCfg, index);
+      const colGapUnits = this.parseGapConfig(colGapsCfg, index);
+      const rowTexts = this.parseTexts(rowTextsCfg, index);
+      const colTexts = this.parseTexts(colTextsCfg, index);
 
-      while (flatIndex < flat.length) {
-        const rowCells = flat.slice(flatIndex, flatIndex + itemsPerRow);
-        rowNumber++;
-        // Row gap: if this row number has an entry in RowGaps, use that;
-        // otherwise use the base gap
-        const gapBelow = rowGapMap.get(rowNumber) ?? this.BASE_GAP_PX;
-        const groups = this.splitRowIntoGroups(rowCells, colGapMap);
-        cellRows.push({ groups, gapBelow });
-        flatIndex += itemsPerRow;
-      }
+      const colSlots = this.buildColumnSlots(itemsPerRow, colGapUnits, rowTexts, colTexts);
+
+      // Same column tracks for every row, so cells, gaps and texts line up.
+      const gridTemplate = colSlots
+        .map(cs => (cs.kind === 'gap' ? `${cs.px}px` : 'minmax(0, 1fr)'))
+        .join(' ');
+
+      const rows = this.buildRows(flat, itemsPerRow, colSlots, rowGapUnits, rowTexts, colTexts);
 
       return {
         index: index + 1,
         header: headers[index] ?? `Drawer ${index + 1}`,
         colorClass: this.getColorClass(headerColors[index]),
-        cellRows,
-        allContacts: flat,
+        gridTemplate,
+        rows,
+        allContacts: flat.filter(c => !this.isEmptyContact(c)),
         expanded: index === 0
       };
     });
@@ -472,19 +668,23 @@ export class FitsetDrawerComponent implements OnInit, OnDestroy, OnChanges {
   // CELL CONTENT HELPERS
   // ============================================================
 
+  // A contact is "empty" when it is missing or every field is blank.
+  isEmptyContact(contact: Contact): boolean {
+    if (!contact) return true;
+    return Object.values(contact).every(
+      v => v === null || v === undefined || String(v).trim() === ''
+    );
+  }
+
   hasCyl(contact: Contact): boolean { return !!contact?.['Cyl']; }
   hasAxis(contact: Contact): boolean { return !!contact?.['Axis']; }
 
-  // Returns the Add field value if present ("Low", "High", etc.)
   getAdd(contact: Contact): string { return String(contact?.['Add'] ?? ''); }
 
-  // Returns a D/N or Type label if present on the contact
   getDN(contact: Contact): string {
     if (contact?.['D'] !== undefined) return 'D';
     if (contact?.['N'] !== undefined) return 'N';
-    const type = String(contact?.['Type'] ?? '');
-    if (type) return type;
-    return '';
+    return String(contact?.['Type'] ?? '');
   }
 
   getContactValue(contact: Contact, key: string): string {
@@ -495,17 +695,28 @@ export class FitsetDrawerComponent implements OnInit, OnDestroy, OnChanges {
   // SELECTION / QUANTITY
   // ============================================================
 
-  isSelected(contact: Contact): boolean { return this.selectedQuantities().has(contact); }
+  isSelected(contact: Contact): boolean {
+    return this.selectedQuantities().has(contact);
+  }
 
   toggleContact(contact: Contact): void {
+    // Empty cells can never be selected
+    if (this.isEmptyContact(contact)) return;
+
     this.selectedQuantities.update(map => {
       const next = new Map(map);
-      if (next.has(contact)) { next.delete(contact); } else { next.set(contact, 1); }
+      if (next.has(contact)) {
+        next.delete(contact);
+      } else {
+        next.set(contact, 1);
+      }
       return next;
     });
   }
 
-  getQuantity(contact: Contact): number { return this.selectedQuantities().get(contact) ?? 0; }
+  getQuantity(contact: Contact): number {
+    return this.selectedQuantities().get(contact) ?? 0;
+  }
 
   increaseQuantity(contact: Contact): void {
     this.selectedQuantities.update(map => {
@@ -519,7 +730,11 @@ export class FitsetDrawerComponent implements OnInit, OnDestroy, OnChanges {
     this.selectedQuantities.update(map => {
       const next = new Map(map);
       const qty = next.get(contact) ?? 0;
-      if (qty <= 1) { next.delete(contact); } else { next.set(contact, qty - 1); }
+      if (qty <= 1) {
+        next.delete(contact);
+      } else {
+        next.set(contact, qty - 1);
+      }
       return next;
     });
   }

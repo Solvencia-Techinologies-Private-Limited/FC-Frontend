@@ -72,36 +72,35 @@
 .pill-group {
   display: flex;
   align-items: center;
-  gap: 6px;
+  gap: 8px;
   flex-wrap: wrap;
+  justify-content: center;
 }
 
-.pill-separator {
-  width: 1px;
-  height: 28px;
-  background: #c8ddf0;
-  flex-shrink: 0;
-}
-
+/* Not selected: plain grey */
 .header-pill {
-  border: 2px solid #b8d4ee;
+  border: 1.5px solid #c9ced6;
   border-radius: 20px;
-  padding: 5px 16px;
-  background: white;
-  color: #1a3550;
+  padding: 6px 20px;
+  background: #f5f6f8;
+  color: #6b7280;
   font-size: 13px;
-  font-weight: 600;
+  font-weight: 500;
   cursor: pointer;
   white-space: nowrap;
   transition: 0.15s ease;
 }
 
-.header-pill:hover { background: #e9f2fb; }
+.header-pill:hover {
+  background: #eceef1;
+}
 
+/* Selected: only the border and text turn blue, NOT filled */
 .header-pill.active {
-  background: #1a73b8;
-  border-color: #1a73b8;
-  color: white;
+  background: white;
+  border-color: #0b5cad;
+  color: #0b5cad;
+  font-weight: 600;
 }
 
 .header-right { flex-shrink: 0; }
@@ -178,62 +177,55 @@
 .section-icon.filled .section-icon-dot { background: white; border-color: white; }
 .section-name { flex: 1; font-size: 13px; font-weight: 600; }
 .section-items { font-size: 11px; white-space: nowrap; opacity: 0.9; }
-.section-body { margin-bottom: 12px; }
 
-/* ===================== ROWS ===================== */
+/* ===================== GRID LAYOUT ===================== */
 
-/*
-  .cell-row is a flex container for one row of cells + gap spacers.
-  margin-bottom is set INLINE per row from RowGaps config.
-  This means:
-  - Normal rows: margin-bottom = BASE_GAP_PX (6px)
-  - Rows listed in RowGaps: margin-bottom = BASE_GAP_PX + (value * GAP_UNIT_PX)
-  
-  Example for RowGaps { "6": 2, "12": 2, "18": 1 }:
-    Rows 1-5:  margin-bottom = 6px  (no gap entry)
-    Row 6:     margin-bottom = 30px (6 + 2*12)
-    Rows 7-11: margin-bottom = 6px
-    Row 12:    margin-bottom = 30px
-    Rows 13-17: margin-bottom = 6px
-    Row 18:    margin-bottom = 18px (6 + 1*12)
-*/
-.cell-row {
+/* Rows are stacked with a 6px gap (ROW_GAP_PX in the .ts file). */
+.section-body {
   display: flex;
-  align-items: stretch;
-  /* margin-bottom set inline per row */
+  flex-direction: column;
+  gap: 6px;
+  margin-bottom: 12px;
 }
 
 /*
-  .cell-group contains cells that are visually adjacent (no extra gap between them).
-  gap: 4px is the small inter-cell gap WITHIN a group.
-  flex: 1 makes each group take equal width.
+  Every row (cell rows AND gap rows) uses the same grid-template-columns,
+  set inline from the JSON (ColumnGaps + any text columns). Gaps are their
+  own tracks, so cells, gaps and texts always line up.
+  column-gap: 4px matches CELL_GAP_PX in the .ts file.
 */
-.cell-group {
-  display: flex;
+.grid-row {
+  display: grid;
+  column-gap: 4px;
   align-items: stretch;
-  gap: 4px;
-  flex: 1;
+}
+
+/* Row gap (RowGaps): height is set inline, holds ColumnRowTexts */
+.gap-row {
+  align-items: center;
 }
 
 /*
-  .col-gap-spacer is inserted BETWEEN cell groups.
-  Width is set inline from ColumnGaps config:
-    spacerWidth = BASE_GAP_PX + (value * GAP_UNIT_PX)
-  
-  Example for ColumnGaps { "2": 2, "4": 2 } with 6 cols:
-    After col 2: spacer width = 6 + 2*12 = 30px
-    After col 4: spacer width = 6 + 2*12 = 30px
-  This creates the clear visual grouping seen in Image 1.
+  Text shown inside gaps:
+  - inside a row gap        -> ColumnRowTexts (e.g. "Cyl: -0.75↑↓")
+  - beside the cells        -> ColumnGapTexts (e.g. "90°")
+  Empty slots are just invisible spacers.
 */
-.col-gap-spacer {
-  flex-shrink: 0;
-  background: transparent;
+.gap-text {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 12px;
+  font-weight: 700;
+  color: #35576d;
+  white-space: nowrap;
+  overflow: hidden;
+  min-width: 0;
 }
 
 /* ===================== CELLS ===================== */
 
 .contact-cell {
-  flex: 1;
   min-width: 0;
   box-sizing: border-box;
   border-radius: 10px;
@@ -269,25 +261,30 @@
   color: white;
 }
 
-/* Power value — increased font size as requested */
+/* Empty cells: visible but disabled, cannot be selected */
+.contact-cell.empty {
+  background: #f1f4f8;
+  border-color: #e3eaf1;
+  opacity: 0.55;
+  cursor: not-allowed;
+}
+
+.contact-cell.empty:hover { background: #f1f4f8; }
+
+/* Power */
 .cell-power {
-  font-size: 14px;   /* was 12px — increased slightly */
+  font-size: 14px;
   font-weight: 700;
   text-align: center;
   line-height: 1.2;
 }
 
-.contact-cell.compact .cell-power {
-  font-size: 12px;   /* was 10px — increased slightly */
-}
+.contact-cell.compact .cell-power { font-size: 12px; }
+.contact-cell:not(.compact) .cell-power { font-size: 16px; }
 
-.contact-cell:not(.compact) .cell-power {
-  font-size: 16px;   /* was 14px — increased slightly */
-}
-
-/* Cyl × Axis — toric lenses */
+/* Cyl × Axis */
 .cell-cyl-axis {
-  font-size: 10px;   /* was 9px — increased slightly */
+  font-size: 10px;
   font-weight: 500;
   text-align: center;
   margin-top: 3px;
@@ -296,11 +293,11 @@
   white-space: nowrap;
 }
 
-.contact-cell.compact .cell-cyl-axis { font-size: 9px; }   /* was 8px */
-.contact-cell:not(.compact) .cell-cyl-axis { font-size: 12px; } /* was 11px */
+.contact-cell.compact .cell-cyl-axis { font-size: 9px; }
+.contact-cell:not(.compact) .cell-cyl-axis { font-size: 12px; }
 .contact-cell.selected .cell-cyl-axis { opacity: 0.9; color: rgba(255,255,255,0.9); }
 
-/* Add value (Low / High etc.) */
+/* Add (Low / High) */
 .cell-add {
   font-size: 10px;
   font-weight: 600;
@@ -312,7 +309,7 @@
 .contact-cell.compact .cell-add { font-size: 9px; }
 .contact-cell.selected .cell-add { opacity: 0.9; color: rgba(255,255,255,0.9); }
 
-/* D/N or Type label */
+/* D / N / Type */
 .cell-dn {
   font-size: 10px;
   font-weight: 700;
@@ -324,6 +321,7 @@
 }
 
 .contact-cell.compact .cell-dn { font-size: 9px; }
+
 .contact-cell.selected .cell-dn {
   background: rgba(255,255,255,0.2);
   color: white;
@@ -400,5 +398,6 @@
   .drawer-page { padding-bottom: 70px; }
   .cell-power { font-size: 10px !important; }
   .cell-cyl-axis { font-size: 8px !important; }
-  .header-pill { padding: 3px 10px; font-size: 11px; }
+  .gap-text { font-size: 10px; }
+  .header-pill { padding: 4px 12px; font-size: 11px; }
 }

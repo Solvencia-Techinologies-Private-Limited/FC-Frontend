@@ -6,13 +6,13 @@
     <div class="header-left">
       <button class="back-arrow-btn" (click)="onBack()" aria-label="Back">←</button>
       @if (productImageUrl) {
-        <img class="header-product-image" [src]="productImageUrl" [alt]="productName()" />
+        <img class="header-product-image" [src]="productImageUrl" [alt]="productName() || productNameInput" />
       }
-      <span class="header-product-name">{{ productName() }}</span>
+      <span class="header-product-name">{{ productName() || productNameInput }}</span>
     </div>
 
+    <!-- Centre: fitset pills (only when the product has more than one fitset) -->
     <div class="header-centre">
-
       @if (productFitSets().length > 1) {
         <div class="pill-group">
           @for (fs of productFitSets(); track fs.fitSetName) {
@@ -23,23 +23,7 @@
             >{{ fs.label }}</button>
           }
         </div>
-        @if (cylValues().length > 0) {
-          <div class="pill-separator"></div>
-        }
       }
-
-      @if (cylValues().length > 0) {
-        <div class="pill-group">
-          @for (cyl of cylValues(); track cyl) {
-            <button
-              class="header-pill"
-              [class.active]="selectedCyl() === cyl"
-              (click)="selectCyl(cyl)"
-            >{{ cyl }}</button>
-          }
-        </div>
-      }
-
     </div>
 
     <div class="header-right">
@@ -48,14 +32,20 @@
 
   </div>
 
-  @if (loading()) { <div class="message">Loading FitSet...</div> }
-  @if (errorMessage()) { <div class="message error">{{ errorMessage() }}</div> }
+  @if (loading()) {
+    <div class="message">Loading FitSet...</div>
+  }
+
+  @if (errorMessage()) {
+    <div class="message error">{{ errorMessage() }}</div>
+  }
 
   @if (!loading() && selectedFitSet()) {
     <div class="fitset-container">
 
       @for (drawer of drawers(); track drawer.index; let di = $index) {
 
+        <!-- Collapsible drawer header, only for multi-section fitsets -->
         @if (useDrawerLayout()) {
           <button
             class="section-header-btn"
@@ -73,72 +63,90 @@
         @if (!useDrawerLayout() || drawer.expanded) {
           <div class="section-body">
 
-            @for (cellRow of drawer.cellRows; track $index) {
+            @for (row of drawer.rows; track $index) {
 
-              <!--
-                gapBelow is set per-row from RowGaps config.
-                It represents the TOTAL space below this row (base + extra).
-                We use margin-bottom to apply it.
-              -->
-              <div class="cell-row" [style.margin-bottom.px]="cellRow.gapBelow">
+              @if (row.kind === 'gap') {
 
-                @for (group of cellRow.groups; track $index; let gi = $index) {
+                <!--
+                  ROW GAP (RowGaps). Uses the same column tracks as the cell rows,
+                  so each text sits exactly above/below its column.
+                  Texts come from ColumnRowTexts (and ColumnGapTexts).
+                -->
+                <div
+                  class="grid-row gap-row"
+                  [style.grid-template-columns]="drawer.gridTemplate"
+                  [style.height.px]="row.height"
+                >
+                  @for (slot of row.slots; track $index) {
+                    <div class="gap-text">{{ slot.text }}</div>
+                  }
+                </div>
 
-                  <!-- Cell group: cells that are visually adjacent within the row -->
-                  <div class="cell-group">
-                    @for (contact of group.cells; track $index) {
+              } @else {
+
+                <!-- NORMAL ROW OF CELLS -->
+                <div class="grid-row" [style.grid-template-columns]="drawer.gridTemplate">
+
+                  @for (slot of row.slots; track $index) {
+
+                    @if (slot.kind === 'cell') {
+
                       <div
                         class="contact-cell"
-                        [class.selected]="isSelected(contact)"
+                        [class.selected]="isSelected(slot.contact)"
                         [class.compact]="useCompactCells()"
-                        (click)="toggleContact(contact)"
+                        [class.empty]="slot.empty"
+                        [attr.aria-disabled]="slot.empty ? 'true' : null"
+                        (click)="toggleContact(slot.contact)"
                       >
 
-                        <!-- Power: always shown, stays visible when selected -->
-                        <div class="cell-power">{{ getContactValue(contact, 'Power') }}</div>
+                        @if (!slot.empty) {
 
-                        <!-- Cyl × Axis: for toric lenses -->
-                        @if (hasCyl(contact) && hasAxis(contact)) {
-                          <div class="cell-cyl-axis">
-                            {{ getContactValue(contact, 'Cyl') }} × {{ getContactValue(contact, 'Axis') }}
-                          </div>
-                        }
+                          <!-- Power: always visible, even when selected -->
+                          <div class="cell-power">{{ getContactValue(slot.contact, 'Power') }}</div>
 
-                        <!-- Add value (e.g. "Low", "High") -->
-                        @if (getAdd(contact)) {
-                          <div class="cell-add">Add: {{ getAdd(contact) }}</div>
-                        }
+                          @if (hasCyl(slot.contact) && hasAxis(slot.contact)) {
+                            <div class="cell-cyl-axis">
+                              {{ getContactValue(slot.contact, 'Cyl') }} × {{ getContactValue(slot.contact, 'Axis') }}
+                            </div>
+                          }
 
-                        <!-- D/N or Type label -->
-                        @if (getDN(contact)) {
-                          <div class="cell-dn">{{ getDN(contact) }}</div>
-                        }
+                          @if (getAdd(slot.contact)) {
+                            <div class="cell-add">Add: {{ getAdd(slot.contact) }}</div>
+                          }
 
-                        <!-- Stepper: below all content so power remains visible -->
-                        @if (isSelected(contact)) {
-                          <div class="quantity-area" (click)="$event.stopPropagation()">
-                            <button class="quantity-button" (click)="decreaseQuantity(contact)">−</button>
-                            <span class="quantity">{{ getQuantity(contact) }}</span>
-                            <button class="quantity-button" (click)="increaseQuantity(contact)">+</button>
-                          </div>
+                          @if (getDN(slot.contact)) {
+                            <div class="cell-dn">{{ getDN(slot.contact) }}</div>
+                          }
+
+                          <!-- Stepper below the content -->
+                          @if (isSelected(slot.contact)) {
+                            <div class="quantity-area" (click)="$event.stopPropagation()">
+                              <button class="quantity-button" (click)="decreaseQuantity(slot.contact)">−</button>
+                              <span class="quantity">{{ getQuantity(slot.contact) }}</span>
+                              <button class="quantity-button" (click)="increaseQuantity(slot.contact)">+</button>
+                            </div>
+                          }
+
                         }
 
                       </div>
-                    }
-                  </div>
 
-                  <!--
-                    Column gap spacer between groups.
-                    Width comes from ColumnGaps config: BASE_GAP_PX + (value * GAP_UNIT_PX)
-                    Only rendered between groups, not after the last one.
-                  -->
-                  @if (gi < cellRow.groups.length - 1) {
-                    <div class="col-gap-spacer" [style.width.px]="group.gapAfter"></div>
+                    } @else {
+
+                      <!--
+                        Column-gap slot (or a missing cell in a short last row).
+                        Shows ColumnGapTexts text beside the cells; empty otherwise.
+                      -->
+                      <div class="gap-text">{{ slot.text }}</div>
+
+                    }
+
                   }
 
-                }
+                </div>
 
-              </div>
+              }
 
             }
 
@@ -150,6 +158,7 @@
     </div>
   }
 
+  <!-- ===================== BOTTOM BAR ===================== -->
   @if (!loading() && selectedFitSet()) {
     <div class="bottom-bar">
       <span class="revenue-units">{{ selectedItemCount() }} Revenue Units</span>
