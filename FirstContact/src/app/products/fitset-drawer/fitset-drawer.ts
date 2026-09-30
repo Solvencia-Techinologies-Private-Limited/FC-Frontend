@@ -1,55 +1,8 @@
-import { Component,Input,Output,EventEmitter,OnInit,OnDestroy,signal,computed,Inject} from '@angular/core';
+import { Component, Input, Output, EventEmitter, OnInit, OnDestroy, signal, computed, Inject } from '@angular/core';
 import { HttpClient } from '@angular/common/http';
 import { Subscription } from 'rxjs';
 import { MAT_DIALOG_DATA, MatDialogRef } from '@angular/material/dialog';
-
-interface Contact {
-  [key: string]: any;
-}
-
-// 'cell'  = a real cell position
-// 'gap'   = a column-gap / text column slot
-// 'blank' = a cell position with no contact (short last row)
-type SlotKind = 'cell' | 'gap' | 'blank';
-
-interface Slot {
-  kind: SlotKind;
-  contact: Contact;
-  empty: boolean;   // contact exists but has no data -> disabled
-  text: string;     // text shown in gap slots (ColumnRowTexts / ColumnGapTexts)
-}
-
-interface RenderRow {
-  kind: 'cells' | 'gap';
-  slots: Slot[];
-  height: number;   // px, only used by gap rows
-}
-
-interface ColSlot {
-  kind: 'cell' | 'gap';
-  cellIndex: number; // valid when kind === 'cell'
-  px: number;        // valid when kind === 'gap'
-}
-
-// { outerKey: { innerKey: text } }
-type TextMap = { [outer: string]: { [inner: string]: string } };
-
-interface DrawerSection {
-  index: number;
-  header: string;
-  colorClass: string;
-  gridTemplate: string; // CSS grid-template-columns shared by every row
-  rows: RenderRow[];
-  allContacts: Contact[];
-  expanded: boolean;
-}
-
-interface FitSetRef {
-  productName: string;
-  fitSetName: string;
-  label: string;
-}
-
+import { ColSlot, Contact, DrawerSection, FitSetRef, RenderRow, Slot, TextMap } from '../product-modal.model';
 @Component({
   selector: 'app-fitset-drawer',
   standalone: true,
@@ -95,7 +48,7 @@ export class FitsetDrawerComponent implements OnInit, OnDestroy {
   private hasInitialized = false;
   private pendingRequest: Subscription | null = null;
 
-  
+
   private readonly JSON_URL = '/fitset-catalog/FitSets-GB.json';
   // private readonly JSON_URL = '/fitset-catalog/FitSets-US.json';
 
@@ -110,9 +63,10 @@ export class FitsetDrawerComponent implements OnInit, OnDestroy {
   private readonly MAX_SLOTS = 200;       // safety cap for text-only extra rows/columns
 
   constructor(private http: HttpClient,
-   private readonly dialogRef: MatDialogRef<FitsetDrawerComponent>,
-   @Inject(MAT_DIALOG_DATA) public data: { brandId: string }
-  ) {}
+    private readonly dialogRef: MatDialogRef<FitsetDrawerComponent>,
+    @Inject(MAT_DIALOG_DATA) public data: {
+      Image: string; brandId: string 
+  }) { }
 
   ngOnInit(): void {
     if (this.hasInitialized) return;
@@ -120,6 +74,7 @@ export class FitsetDrawerComponent implements OnInit, OnDestroy {
     this.withData(data => this.initForProduct(data));
     this.productNameInput = this.data.brandId;
     this.fitSetName = '';
+    this.productImageUrl = this.data.Image || '';
   }
 
 
@@ -390,7 +345,7 @@ export class FitsetDrawerComponent implements OnInit, OnDestroy {
   //   ColumnGaps {"3": 2}, 6 cells  ->  cell cell cell GAP cell cell cell
   // If any text refers to a column slot past the end, extra text-only
   // columns are added on the right (this is how key "7" in ColumnGapTexts works).
-  private buildColumnSlots(itemsPerRow: number, colGapUnits: Map<number, number>, rowTexts: TextMap,colTexts: TextMap): ColSlot[] {
+  private buildColumnSlots(itemsPerRow: number, colGapUnits: Map<number, number>, rowTexts: TextMap, colTexts: TextMap): ColSlot[] {
     const slots: ColSlot[] = [];
 
     const gapPx = (units: number) =>
@@ -558,36 +513,66 @@ export class FitsetDrawerComponent implements OnInit, OnDestroy {
     const rowTextsCfg = this.cfg(fitSet, 'ColumnRowTexts');
     const colTextsCfg = this.cfg(fitSet, 'ColumnGapTexts');
 
-    const built: DrawerSection[] = contacts.map((sectionContacts: any, index: number) => {
+    const built: DrawerSection[] = contacts.map(
+      (sectionContacts: any, index: number) => {
+        const flat: Contact[] = (
+          Array.isArray(sectionContacts)
+            ? sectionContacts.flat(Infinity)
+            : []
+        ).map((c: any) => c ?? {}) as Contact[];
 
-      const flat: Contact[] = (
-        Array.isArray(sectionContacts) ? sectionContacts.flat(Infinity) : []
-      ).map((c: any) => c ?? {}) as Contact[];
+        const rowGapUnits = this.parseGapConfig(rowGapsCfg, index);
+        const colGapUnits = this.parseGapConfig(colGapsCfg, index);
+        const rowTexts = this.parseTexts(rowTextsCfg, index);
+        const colTexts = this.parseTexts(colTextsCfg, index);
 
-      const rowGapUnits = this.parseGapConfig(rowGapsCfg, index);
-      const colGapUnits = this.parseGapConfig(colGapsCfg, index);
-      const rowTexts = this.parseTexts(rowTextsCfg, index);
-      const colTexts = this.parseTexts(colTextsCfg, index);
+        const colSlots = this.buildColumnSlots(
+          itemsPerRow,
+          colGapUnits,
+          rowTexts,
+          colTexts
+        );
 
-      const colSlots = this.buildColumnSlots(itemsPerRow, colGapUnits, rowTexts, colTexts);
+        const gridTemplate = colSlots
+          .map(cs =>
+            cs.kind === 'gap'
+              ? `${cs.px}px`
+              : 'minmax(0, 1fr)'
+          )
+          .join(' ');
 
-      // Same column tracks for every row, so cells, gaps and texts line up.
-      const gridTemplate = colSlots
-        .map(cs => (cs.kind === 'gap' ? `${cs.px}px` : 'minmax(0, 1fr)'))
-        .join(' ');
+        const rows = this.buildRows(
+          flat,
+          itemsPerRow,
+          colSlots,
+          rowGapUnits,
+          rowTexts,
+          colTexts
+        );
 
-      const rows = this.buildRows(flat, itemsPerRow, colSlots, rowGapUnits, rowTexts, colTexts);
-
-      return {
-        index: index + 1,
-        header: headers[index] ?? `Drawer ${index + 1}`,
-        colorClass: this.getColorClass(headerColors[index]),
-        gridTemplate,
-        rows,
-        allContacts: flat.filter(c => !this.isEmptyContact(c)),
-        expanded: index === 0
-      };
-    });
+        return {
+          index: index + 1,
+          header: headers[index] ?? `Drawer ${index + 1}`,
+          colorClass: this.getColorClass(headerColors[index]),
+          gridTemplate,
+          rows,
+          cellRows: rows.reduce<DrawerSection['cellRows']>((cellRows, row) => {
+            if (row.kind === 'gap') {
+              const previous = cellRows[cellRows.length - 1];
+              if (previous) previous.gapBelow = row.height;
+            } else {
+              cellRows.push({
+                groups: [{ cells: row.slots, gapAfter: 0 }],
+                gapBelow: 0
+              });
+            }
+            return cellRows;
+          }, []),
+          allContacts: flat.filter(c => !this.isEmptyContact(c)),
+          expanded: index === 0
+        };
+      }
+    );
 
     this.drawers.set(built);
   }
@@ -637,10 +622,6 @@ export class FitsetDrawerComponent implements OnInit, OnDestroy {
   getContactValue(contact: Contact, key: string): string {
     return String(contact?.[key] ?? '');
   }
-
-  // ============================================================
-  // SELECTION / QUANTITY
-  // ============================================================
 
   isSelected(contact: Contact): boolean {
     return this.selectedQuantities().has(contact);

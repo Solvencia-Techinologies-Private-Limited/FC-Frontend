@@ -64,7 +64,8 @@ export class ProductSelectionModal {
       maxWidth: '100vw',
       maxHeight: '100vh',
       data: {
-        brandId: product
+        brandId: product,
+        Image: this.getImagePath(this.product['Image'])
       }
     });
   }

@@ -183,3 +183,44 @@ export interface FitSetRef {
   fitSetName: string;
   label: string;
 }
+
+export type SlotKind = 'cell' | 'gap' | 'blank';
+
+export interface Slot {
+  kind: SlotKind;
+  contact: Contact;
+  empty: boolean;   // contact exists but has no data -> disabled
+  text: string;     // text shown in gap slots (ColumnRowTexts / ColumnGapTexts)
+}
+
+export interface RenderRow {
+  kind: 'cells' | 'gap';
+  slots: Slot[];
+  height: number;   // px, only used by gap rows
+}
+
+export interface ColSlot {
+  kind: 'cell' | 'gap';
+  cellIndex: number; // valid when kind === 'cell'
+  px: number;        // valid when kind === 'gap'
+}
+
+// { outerKey: { innerKey: text } }
+export type TextMap = { [outer: string]: { [inner: string]: string } };
+
+
+export interface DrawerSection {
+  index: number;
+  header: string;
+  colorClass: string;
+  gridTemplate: string;
+  rows: RenderRow[];
+  allContacts: Contact[];
+  expanded: boolean;
+}
+
+export interface FitSetRef {
+  productName: string;
+  fitSetName: string;
+  label: string;
+}

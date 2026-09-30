@@ -3,14 +3,6 @@
   <!-- ===================== HEADER BAR ===================== -->
   <div class="drawer-header-bar">
 
-    <div class="header-left">
-      <button class="back-arrow-btn" (click)="onBack()" aria-label="Back">←</button>
-      @if (productImageUrl) {
-        <img class="header-product-image" [src]="productImageUrl" [alt]="productName() || productNameInput" />
-      }
-      <span class="header-product-name">{{ productName() || productNameInput }}</span>
-    </div>
-
     <!-- Centre: fitset pills (only when the product has more than one fitset) -->
     <div class="header-centre">
       @if (productFitSets().length > 1) {
