@@ -2,7 +2,8 @@ import { CommonModule } from '@angular/common';
 import { ChangeDetectorRef, Component, Inject, OnInit } from '@angular/core';
 import { MAT_DIALOG_DATA, MatDialogRef } from '@angular/material/dialog';
 import { ProductService } from '../product-services';
-import { ProductResponse, ProductParameter } from '../product-modal.model';
+import { Product } from '../product-modal.model';
+import { ProductParameter } from '../product-modal.model';
 
 @Component({
   selector: 'app-classic-contact-picker',
@@ -14,7 +15,7 @@ import { ProductResponse, ProductParameter } from '../product-modal.model';
 
 export class ClassicContactPicker implements OnInit {
   productName = '';
-  product: ProductResponse | null = null;
+  product: Product | null = null;
   selectedParameter = '';
   selectedValues: Record<string, string> = {};
   quantity = 0;
@@ -42,16 +43,12 @@ export class ClassicContactPicker implements OnInit {
   private loadProduct(productName: string): void {
     this.loading = true;
     this.error = '';
-    this.selectedParameter = '';
-    this.selectedValues = {};
-    this.quantity = 0;
 
-    this.productService.getSeriesList().subscribe({
+    this.productService.getProducts().subscribe({
       next: products => {
-
-        const productData = products?.data?.find(
-          (item: ProductResponse) =>
-            this.normalizeProductName(item.displayName) ===
+        const productData = products.find(
+          item =>
+            this.normalizeProductName(item.brandName) ===
             this.normalizeProductName(productName)
         );
 
@@ -63,14 +60,17 @@ export class ClassicContactPicker implements OnInit {
 
         this.product = productData;
 
-        const selectableParameter =
-          this.selectableParameters.find(parameter => !this.isFixedParameter(parameter.name));
-        this.selectedParameter = selectableParameter?.name ?? '';
+        const firstParameter =
+          this.selectableParameters.find(
+            p => !this.isFixedParameter(p.name)
+          );
+
+        this.selectedParameter = firstParameter?.name ?? '';
+
         this.loading = false;
         this.changeDetectorRef.detectChanges();
       },
-
-      error: error => {
+      error: () => {
         this.error = 'Unable to load product configuration.';
         this.loading = false;
         this.changeDetectorRef.detectChanges();
@@ -82,25 +82,88 @@ export class ClassicContactPicker implements OnInit {
     return (value ?? '').trim().toLowerCase().replace(/[™®©]/g, '').replace(/\s*\([^)]*\)\s*$/, '').replace(/\s+/g, ' ').trim();
   }
 
-  get parameters(): ProductParameter[] {
-    if (!this.product?.parameters) {
-      return [];
-    }
-
-    return Object.entries(this.product.parameters).filter(([, values]) => Array.isArray(values) && values.length > 0).map(([name, values]) => ({ name, values: values as (string | number)[] }));
-  }
-
-
   private isFixedParameter(name: string): boolean {
     return [
       'baseCurve',
       'diameter',
-      'packSize'
     ].includes(name);
   }
 
+  get baseCurve(): string {
+    return this.product?.baseCurve?.[1] ?? '';
+  }
+  get wearingSchedule(): string {
+    return this.product?.wearingSchedule ?? '';
+  }
+
   get selectableParameters(): ProductParameter[] {
-    return this.parameters;
+    if (!this.product) {
+      return [];
+    }
+
+    const parameters: ProductParameter[] = [];
+
+    const addParameter = (
+      name: string,
+      label: string,
+      values: string[]
+    ) => {
+      if (values.length > 0) {
+        parameters.push({
+          name,
+          label,
+          values
+        });
+      }
+    };
+
+    // BC
+    addParameter(
+      'baseCurve',
+      'BC',
+      this.product.baseCurve?.slice(1) ?? []
+    );
+
+    // Schedule
+    addParameter(
+      'wearingSchedule',
+      'Schedule',
+      this.product.wearingSchedule
+        ? [this.product.wearingSchedule]
+        : []
+    );
+
+    // Trial Unit Count
+    addParameter(
+      'trialUnitCount',
+      'Trial Qty',
+      this.product.trialUnitCount != null
+        ? [String(this.product.trialUnitCount)]
+        : []
+    );
+
+    // Power
+    addParameter(
+      'power',
+      'Power',
+      this.product.sphere?.[0]?.slice(1) ?? []
+    );
+
+    // Cylinder
+    addParameter(
+      'cylinder',
+      'Cylinder',
+      this.product.cylinder?.[0]?.slice(1) ?? []
+    );
+
+    // Axis
+    addParameter(
+      'axis',
+      'Axis',
+      this.product.axis?.[0]?.slice(1) ?? []
+    );
+
+    return parameters;
   }
 
   get currentParameter(): ProductParameter | null {
@@ -165,10 +228,6 @@ export class ClassicContactPicker implements OnInit {
     }
 
     const selectedProduct = {
-      itemId: this.product.itemId,
-
-      productName: this.product.displayName,
-
       brandName: this.product.brandName,
 
       selections: {
@@ -177,29 +236,18 @@ export class ClassicContactPicker implements OnInit {
 
       quantity: this.quantity,
 
-      diameter: this.product.diameter,
+      baseCurve: this.product.baseCurve?.[1],
 
-      baseCurve: this.product.baseCurve,
+      wearingSchedule:
+        this.product.wearingSchedule,
 
-      packSize: this.product.packSize,
-
-      imagePath: this.product.imagePath,
-
-
-      wearingSchedule: this.product.modality,
-
-
-      buyingProduct: this.product.buyingProduct,
-
-      buyingProductCode:
-        this.product.buyingProductCode,
-
-      trial: this.product.trial,
-
-      trialReference:
-        this.product.trialReference
+      imageFileName:
+        this.product.imageFileName
     };
 
+    console.log(selectedProduct);
+
+    this.dialogRef.close(selectedProduct);
   }
 
   get selectionText(): string {
@@ -207,41 +255,21 @@ export class ClassicContactPicker implements OnInit {
       return 'Selection: - none -';
     }
 
-    const parameters =
-      this.selectableParameters;
+    const values = this.selectableParameters
+      .map(p => this.selectedValues[p.name])
+      .filter(Boolean);
 
-    const parts = parameters.map(parameter => {
-      const selectedValue = this.selectedValues[parameter.name];
-
-      if (selectedValue != null && selectedValue !== '') {
-        return selectedValue;
-      }
-
-      const values = parameter.values;
-
-      if (Array.isArray(values)) {
-        return values[0]?.toString() ?? '';
-      }
-
-      return String(values ?? '');
-    });
-
-    const allSelected = parts.every(
-      value => value !== ''
-    );
-
-    if (!allSelected) {
+    if (!values.length) {
       return 'Selection: - none -';
     }
 
-    return `Selection: ${parts.join(' ')}`;
+    return `Selection: ${values.join(' ')}`;
   }
 
   get imageUrl(): string {
-    return (
-      this.product?.imagePath?.medium ??
-      ''
-    );
+    return this.product?.imageFileName
+      ? `/Packshots/${this.product.imageFileName}`
+      : '';
   }
 
   close(): void {

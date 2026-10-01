@@ -1,0 +1,189 @@
+<div class="picker-overlay">
+
+  <div class="picker-container">
+
+    <button
+      type="button"
+      class="close-button"
+      (click)="close()">
+      ×
+    </button>
+
+    @if (loading) {
+      <div class="status-container">
+        Loading product...
+      </div>
+    }
+
+    @if (!loading && error) {
+      <div class="status-container error-state">
+        <div>{{ error }}</div>
+
+        <button
+          type="button"
+          class="retry-button"
+          (click)="retry()">
+          Retry
+        </button>
+      </div>
+    }
+
+    @if (!loading && !error && product(); as p) {
+
+      <main class="content">
+
+        <header class="product-header">
+
+          @if (imageUrl()) {
+            <img
+              class="product-image"
+              [src]="imageUrl()"
+              [alt]="displayName()">
+          }
+
+          <h1 class="product-name">
+            {{ displayName() }}
+          </h1>
+
+        </header>
+
+        @for (bc of baseCurves; track bc; let i = $index) {
+
+          <div class="bc-wrapper">
+
+            <!-- BC ROW -->
+
+            <div
+              class="section-row"
+              [class.selected]="expandedBc === bc"
+              (click)="selectParameterValue('baseCurve', bc)">
+
+              <div class="section-left">
+
+                <input
+                  type="radio"
+                  [checked]="expandedBc === bc">
+
+                <span>
+                  BC: {{ bc }}
+                </span>
+
+              </div>
+
+              <div
+                class="section-center"
+                [class.minus]="i === 0"
+                [class.plus]="i !== 0">
+
+                {{
+                  i === 0
+                    ? '- Minus Powers -'
+                    : '+ Plus Powers +'
+                }}
+
+              </div>
+
+              <div class="section-right">
+                Qty: {{ getBcQty(bc) }}
+              </div>
+
+            </div>
+
+            <!-- EXPANDED GRID -->
+
+            @if (expandedBc === bc) {
+
+              <div class="power-grid">
+
+                @for (power of powers; track power) {
+
+                  <div class="power-card">
+
+                    <div class="power-header">
+
+                      <span>
+                        {{ bc }}
+                      </span>
+
+                      <span>
+                        {{ power }}
+                      </span>
+
+                    </div>
+
+                    <div class="power-footer">
+
+                      <button
+                        type="button"
+                        (click)="decreasePower(bc, power); $event.stopPropagation()">
+                        −
+                      </button>
+
+                      <span>
+                        Qty:
+                        {{ getPowerQty(bc, power) }}
+                      </span>
+
+                      <button
+                        type="button"
+                        (click)="increasePower(bc, power); $event.stopPropagation()">
+                        +
+                      </button>
+
+                    </div>
+
+                  </div>
+
+                }
+
+              </div>
+
+            }
+
+          </div>
+
+        }
+
+        <div class="actions">
+
+          <button
+            type="button"
+            class="cart-button"
+            [disabled]="!atLeastOneItemSelected()"
+            (click)="addToCart()">
+
+            Add Trial Items To Cart
+
+          </button>
+
+        </div>
+
+      </main>
+
+    }
+
+  </div>
+
+  <div style="padding:20px;color:red">
+
+Loading: {{ loading }}
+
+<br>
+
+Error: {{ error }}
+
+<br>
+
+Has Product: {{ !!product() }}
+
+<br>
+
+BC Count: {{ baseCurves.length }}
+
+<br>
+
+Power Count: {{ powers.length }}
+
+</div>
+
+</div>

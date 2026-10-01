@@ -7,11 +7,11 @@
     >
       <div class="modal-product-image">
         <img
-          [src]="getImagePath(product['Image'])"
-          [alt]="product['brandId']"
+          [src]="product.imageFileName ? getImagePath(product.imageFileName) : ''"
+          [alt]="product.brandName"
         />
       </div>
-      <p class="lens-name">{{ product['brandId'] }}</p>
+      <p class="lens-name">{{ product.brandName }}</p>
     </div>
   </ng-container>
 

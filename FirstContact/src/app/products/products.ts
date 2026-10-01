@@ -1,9 +1,9 @@
 import { Component, OnInit, signal, computed } from '@angular/core';
 import { CommonModule } from '@angular/common';
-import { ProductService } from './product-services';
 import { Product } from './product-modal.model';
 import { ProductSelectionModal } from './product-selection-modal/product-selection-modal';
 import { FitsetDrawerComponent } from './fitset-drawer/fitset-drawer';
+import { ProductService } from './product-services';
 
 @Component({
   selector: 'app-products',
@@ -20,10 +20,10 @@ export class Products implements OnInit {
 
   filteredProductsSign = computed(() =>
     this.productsSign()
-      .filter(p => !!p['brandId'])
-      .map(p => ({
+      .filter((p: Product & { brandName?: string }) => !!p.brandName)
+      .map((p: Product & { brandName?: string }) => ({
         ...p,
-        brandId: this.removeTrailingNumber(p['brandId'])
+        brandName: p.brandName ?? ''
       }))
   );
   loading = this.loadingSign.asReadonly();
@@ -44,19 +44,20 @@ export class Products implements OnInit {
         this.productsSign.set(data);
         this.loadingSign.set(false);
       },
-      error: () => {
+      error: (err) => {
+        console.error('Failed to load products:', err);
         this.errorSign.set('Failed to load products.');
         this.loadingSign.set(false);
       }
     });
   }
 
-  getImagePath(fileName: string): string {
-    return `/UK%20Packshots/${fileName}`;
+  getImagePath(fileName: string, useFallback = false): string {
+    return `/Packshots/${fileName}`;
   }
 
   trackByBrand(_: number, p: Product): string {
-    return p['brandId'];
+    return (p as Product & { brandName?: string }).brandName ?? '';
   }
 
   openProductModal(product: Product): void {
@@ -78,9 +79,5 @@ export class Products implements OnInit {
   onFitSetBack(): void {
     this.showFitSetDrawer = false;
   }
-  // -------------
 
-  removeTrailingNumber(name: string): string {
-    return name.replace(/\s+\d+$/, '').trim();
-  }
 }

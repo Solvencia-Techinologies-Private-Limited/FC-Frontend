@@ -3,181 +3,184 @@
   <div class="picker-container">
 
     <!-- Close -->
-    <button type="button"class="close-button" aria-label="Close"(click)="close()">
+    <button type="button" class="close-button" aria-label="Close" (click)="close()">
       ×
     </button>
 
     <!-- Loading -->
     @if (loading) {
 
-      <div class="product-content">
-        <!-- Product name -->
-        <div class="product-name">
-          {{ productName }}
+    <div class="product-content">
+
+      <div class="product-name">
+        {{ productName }}
+      </div>
+
+      <div class="selection-text">
+        Loading...
+      </div>
+
+      <div class="quantity-container">
+
+        <button type="button" class="quantity-button" [disabled]="quantity === 0" (click)="decreaseQuantity()">
+          −
+        </button>
+
+        <div class="quantity-value">
+          {{ quantity }}
         </div>
 
-        <!-- Selection -->
-        <div class="selection-text">
-          {{ selectionText }}
-        </div>
-
-        <!-- Quantity -->
-        <div class="quantity-container">
-
-          <button
-            type="button"
-            class="quantity-button"
-            [disabled]="quantity === 0"
-            (click)="decreaseQuantity()">
-            −
-          </button>
-
-          <div class="quantity-value">
-            {{ quantity }}
-          </div>
-
-          <button
-            type="button"
-            class="quantity-button"
-            (click)="increaseQuantity()">
-            +
-          </button>
-
-        </div>
-
-        <!-- Add button (disabled while loading) -->
-        <button
-          type="button"
-          class="add-button"
-          disabled>
-
-          Add Trial Items To Cart
-
+        <button type="button" class="quantity-button" (click)="increaseQuantity()">
+          +
         </button>
 
       </div>
+
+      <button type="button" class="add-button" disabled>
+        Add Trial Items To Cart
+      </button>
+
+    </div>
 
     }
 
     <!-- Error -->
     @else if (error) {
 
-      <div class="error">
-        {{ error }}
-      </div>
+    <div class="error">
+      {{ error }}
+    </div>
 
     }
 
     <!-- Product -->
     @else if (product) {
 
-      <div class="product-content">
+    <div class="product-content">
 
-        <!-- Product image -->
-        <div class="product-image-wrapper">
+      <!-- Product image -->
+      <div class="product-image-wrapper">
 
-          @if (imageUrl) {
-            <img
-              class="product-image"
-              [src]="imageUrl"
-              [alt]="product.brandName" />
+        @if (imageUrl) {
+
+        <img class="product-image" [src]="imageUrl" [alt]="product.brandName" />
+
+        }
+
+      </div>
+
+      <!-- Product name -->
+      <div class="product-name">
+        {{ product.brandName }}
+      </div>
+
+      <!-- Parameters -->
+      @if (selectableParameters.length > 0) {
+
+      <div class="parameters-table">
+
+        <!-- Header row -->
+        <div class="parameters-header">
+
+          @for (parameter of selectableParameters; track parameter.name) {
+
+          <div class="parameter-header-cell">
+            {{ parameter.label }}
+          </div>
+
           }
 
         </div>
 
-        <!-- Product name -->
-        <div class="product-name">
-          {{ product.brandName }}
-        </div>
+        <!-- Values row -->
+        <div class="parameters-body">
 
-        @if (parameters.length > 0) {
+          @for (parameter of selectableParameters; track parameter.name) {
 
-          <div class="parameters-table">
+          <div class="parameter-body-cell">
 
-            <!-- Header row -->
-            <div class="parameters-header">
+            @if (parameter.values.length > 1) {
 
-              @for (parameter of parameters; track parameter.name)  {
-                <div class="parameter-header-cell">
-                  {{ toPascalCase(parameter.name) }}
-                </div>
-              }
+            <div class="parameter-selector">
+
+              <select [value]="selectedValues[parameter.name]"
+                (change)="selectParameterValue(parameter.name, $any($event.target).value)">
+
+                <option value="" disabled selected hidden></option>
+
+                @for (value of parameter.values; track value) {
+
+                <option [value]="value">
+                  {{ value }}
+                </option>
+
+                }
+
+              </select>
+
+              <span class="select-arrow">
+
+                <svg width="20" height="20" viewBox="0 0 20 20" fill="none" xmlns="http://www.w3.org/2000/svg">
+
+                  <path
+                    d="M8.42361 14.2191L2.85446 9.69416C2.35574 9.28895 2.20674 8.59099 2.49653 8.01746C2.89028 7.23816 3.9039 7.02302 4.58025 7.5752L10.0001 12L15.4199 7.5752C16.0963 7.02302 17.1099 7.23816 17.5037 8.01746C17.7934 8.59099 17.6444 9.28895 17.1457 9.69416L11.5766 14.2191C10.6581 14.9654 9.34212 14.9654 8.42361 14.2191Z"
+                    fill="#2D353D" />
+
+                </svg>
+
+              </span>
 
             </div>
 
-            <!-- Value row -->
-            <div class="parameters-body">
-              @for (parameter of parameters; track parameter.name)  {
-                <div class="parameter-body-cell">
-                  @if (parameter.values.length > 1) {
-                    <div class="parameter-selector">
-                      <select
-                        [value]="selectedValues[parameter.name]"
-                        (change)="selectParameterValue(parameter.name, $any($event.target).value)">
-                        <option value="" disabled selected hidden></option>
-                        @for (value of parameter.values;track value) {
-                          <option [value]="value">
-                            {{ value }}
-                          </option>
-                        }
-                      </select>
+            }
+            @else {
 
-                      <span class="select-arrow">
-                        <svg width="20" height="20" viewBox="0 0 20 20" fill="none" xmlns="http://www.w3.org/2000/svg">
-                          <path
-                            d="M8.42361 14.2191L2.85446 9.69416C2.35574 9.28895 2.20674 8.59099 2.49653 8.01746C2.89028 7.23816 3.9039 7.02302 4.58025 7.5752L10.0001 12L15.4199 7.5752C16.0963 7.02302 17.1099 7.23816 17.5037 8.01746C17.7934 8.59099 17.6444 9.28895 17.1457 9.69416L11.5766 14.2191C10.6581 14.9654 9.34212 14.9654 8.42361 14.2191Z"
-                            fill="#2D353D" />
-                        </svg>
-                      </span>
-                    </div>
-                  }
-                  @else {
-                    <div class="parameter-fixed">
-                      {{ parameter.values[0] }}
-                    </div>
-                  }
-                </div>
-              }
+            <div class="parameter-fixed">
+              {{ parameter.values?.[0] ?? '' }}
             </div>
-          </div>
-        }
 
-        <!-- Selection -->
-        <div class="selection-text">
-          {{ selectionText }}
-        </div>
+            }
 
-        <!-- Quantity -->
-        <div class="quantity-container">
-          <button type="button" class="quantity-button"[disabled]="quantity === 0" (click)="decreaseQuantity()">
-            −
-          </button>
-
-          <div class="quantity-value">
-            {{ quantity }}
           </div>
 
-          <button
-            type="button"
-            class="quantity-button"
-            (click)="increaseQuantity()">
-            +
-          </button>
+          }
 
         </div>
 
-        <!-- Add button -->
-        <button
-          type="button"
-          class="add-button"
-          [disabled]="quantity === 0"
-          (click)="addToCart()">
+      </div>
 
-          Add Trial Items To Cart
+      }
 
+      <!-- Selection -->
+      <div class="selection-text">
+        {{ selectionText }}
+      </div>
+
+      <!-- Quantity -->
+      <div class="quantity-container">
+
+        <button type="button" class="quantity-button" [disabled]="quantity === 0" (click)="decreaseQuantity()">
+          −
+        </button>
+
+        <div class="quantity-value">
+          {{ quantity }}
+        </div>
+
+        <button type="button" class="quantity-button" (click)="increaseQuantity()">
+          +
         </button>
 
       </div>
+
+      <!-- Add button -->
+      <button type="button" class="add-button" [disabled]="quantity === 0" (click)="addToCart()">
+
+        Add Trial Items To Cart
+
+      </button>
+
+    </div>
 
     }
 

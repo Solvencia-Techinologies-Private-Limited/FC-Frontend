@@ -1,24 +1,43 @@
 import { Injectable } from '@angular/core';
 import { HttpClient } from '@angular/common/http';
-import { map, Observable, shareReplay } from 'rxjs';
+import { filter, map, Observable, shareReplay } from 'rxjs';
 import { ContactProduct, parseProducts, Product } from './product-modal.model'
 
 @Injectable({ providedIn: 'root' })
 export class ProductService {
-  private readonly jsonUrl = '/product_UK.json';
+  private readonly jsonUrl = '/Product_US.json';
   private products$: Observable<ContactProduct[]>;
 
   constructor(private http: HttpClient) {
     this.products$ = this.http
-      .get('assets/products.json')
-      .pipe(map(parseProducts), shareReplay(1));
+      .get<unknown>(this.jsonUrl)
+      .pipe(
+        map((response) => parseProducts(response as Product[]) as ContactProduct[]),
+        shareReplay(1)
+      );
   }
 
   getProducts(): Observable<Product[]> {
-    return this.http.get<Product[]>(this.jsonUrl);
+  return this.http
+    .get<any[]>('/Product_US.json')
+    .pipe(
+      map(products =>
+        products.map(item => ({
+          brandName: item['0_BrandName'],
+          baseCurve: item['1_BaseCurve'],
+          sphere: item['2_Sphere'],
+          cylinder: item['3_Cylinder'],
+          axis: item['4_Axis'],
+          diameter: item['5_Diameter'],
+          imageFileName: item['7_ImageFileName'],
+          wearingSchedule: item['8_WearingSchedule'],
+          trialUnitCount: item['9_TrialUnitCount']
+        }))
+      )
+    );
   }
 
-   getByName(name: string): Observable<ContactProduct | undefined> {
+  getByName(name: string): Observable<ContactProduct | undefined> {
     return this.products$.pipe(
       map((list) =>
         list.find((p) => p.brandName.toLowerCase() === name.toLowerCase())

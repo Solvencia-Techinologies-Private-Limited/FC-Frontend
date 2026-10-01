@@ -1,0 +1,302 @@
+:host {
+  display: block;
+}
+
+.picker-overlay {
+  width: 100%;
+  min-height: 100%;
+  background: #f4f4f4;
+}
+
+.picker-container {
+  position: relative;
+  padding: 24px;
+}
+
+.close-button {
+  position: absolute;
+  top: 20px;
+  right: 24px;
+
+  border: none;
+  background: transparent;
+
+  cursor: pointer;
+
+  font-size: 38px;
+  line-height: 1;
+
+  color: #111;
+}
+
+.content {
+  max-width: 1500px;
+  margin: 0 auto;
+}
+
+.product-header {
+  text-align: center;
+  margin-bottom: 40px;
+}
+
+.product-image {
+  width: 180px;
+  height: auto;
+  display: block;
+  margin: 0 auto 20px auto;
+}
+
+.product-name {
+  margin: 0;
+
+  font-size: 32px;
+  font-weight: 700;
+
+  color: #222;
+}
+
+.bc-wrapper {
+  margin-bottom: 12px;
+}
+
+.section-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+
+  background: #fff;
+
+  border: 1px solid #d8d8d8;
+  border-radius: 14px;
+
+  min-height: 58px;
+
+  padding: 0 24px;
+
+  cursor: pointer;
+
+  transition: all 0.2s ease;
+}
+
+.section-row:hover {
+  border-color: #b9b9b9;
+}
+
+.section-row.selected {
+  border-color: #2d63b3;
+}
+
+.section-left {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+
+  min-width: 180px;
+}
+
+.section-left input[type='radio'] {
+  pointer-events: none;
+}
+
+.section-left span {
+  font-size: 18px;
+}
+
+.section-center {
+  font-size: 18px;
+  font-weight: 600;
+}
+
+.section-center.minus {
+  color: #c97331;
+}
+
+.section-center.plus {
+  color: #4b944d;
+}
+
+.section-right {
+  min-width: 80px;
+  text-align: right;
+
+  font-size: 18px;
+}
+
+.power-grid {
+  margin-top: 24px;
+  margin-bottom: 24px;
+
+  width: fit-content;
+
+  display: grid;
+  grid-template-columns: repeat(5, 170px);
+
+  gap: 18px;
+
+  margin-left: auto;
+  margin-right: auto;
+
+  animation: expand 0.2s ease;
+}
+
+@keyframes expand {
+  from {
+    opacity: 0;
+    transform: translateY(-8px);
+  }
+
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.power-card {
+  background: #fff;
+
+  border: 1px solid #d8d8d8;
+  border-radius: 12px;
+
+  overflow: hidden;
+
+  box-shadow: 0 1px 2px rgba(0, 0, 0, 0.04);
+}
+
+.power-header {
+  background: #4e944f;
+
+  color: white;
+
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+
+  height: 48px;
+
+  padding: 0 12px;
+
+  font-weight: 600;
+  font-size: 16px;
+}
+
+.power-footer {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+
+  padding: 12px;
+}
+
+.power-footer span {
+  font-size: 16px;
+  color: #333;
+}
+
+.power-footer button {
+  border: none;
+  background: transparent;
+
+  cursor: pointer;
+
+  color: #2f63b3;
+
+  font-size: 24px;
+  font-weight: 700;
+
+  width: 24px;
+  height: 24px;
+
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.power-footer button:hover {
+  color: #1f4c92;
+}
+
+.actions {
+  text-align: center;
+  margin-top: 40px;
+  margin-bottom: 20px;
+}
+
+.cart-button {
+  border: none;
+
+  background: #245ab3;
+  color: white;
+
+  min-width: 260px;
+
+  padding: 14px 32px;
+
+  border-radius: 30px;
+
+  font-size: 16px;
+  font-weight: 500;
+
+  cursor: pointer;
+
+  transition: all 0.2s ease;
+}
+
+.cart-button:hover:not(:disabled) {
+  background: #194992;
+}
+
+.cart-button:disabled {
+  opacity: 0.45;
+  cursor: not-allowed;
+}
+
+.status-container {
+  text-align: center;
+  padding: 40px;
+}
+
+.retry-button {
+  margin-top: 16px;
+
+  border: none;
+  border-radius: 6px;
+
+  background: #245ab3;
+  color: white;
+
+  padding: 8px 16px;
+
+  cursor: pointer;
+}
+
+.error-state {
+  color: #c62828;
+}
+
+@media (max-width: 1200px) {
+  .power-grid {
+    grid-template-columns: repeat(4, 170px);
+  }
+}
+
+@media (max-width: 992px) {
+  .power-grid {
+    grid-template-columns: repeat(3, 170px);
+  }
+}
+
+@media (max-width: 768px) {
+  .power-grid {
+    grid-template-columns: repeat(2, 170px);
+  }
+
+  .section-center {
+    display: none;
+  }
+}
+
+@media (max-width: 480px) {
+  .power-grid {
+    grid-template-columns: repeat(1, 170px);
+  }
+}

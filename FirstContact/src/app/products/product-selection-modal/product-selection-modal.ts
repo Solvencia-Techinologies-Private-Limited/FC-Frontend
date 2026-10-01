@@ -1,9 +1,9 @@
 import { Component, EventEmitter, Input, Output } from '@angular/core';
 import { Product } from '../product-modal.model';
 import { ClassicContactPicker } from '../classic-contact-picker/classic-contact-picker';
-import {FullContactPicker} from '../full-contact-picker/full-contact-picker';
 import { FitsetDrawerComponent } from '../fitset-drawer/fitset-drawer';
 import { MatDialog } from '@angular/material/dialog';
+import { BrandSelectorComponent } from '../full-contact-picker/brand-selector.component';
 
 @Component({
   selector: 'app-product-selection-modal',
@@ -33,6 +33,7 @@ export class ProductSelectionModal {
       this.isContactPickerOpen = true;
     }
   }
+  
   openClassicContactPicker(product: any): void {
     this.dialog.open(ClassicContactPicker, {
       width: '100vw',
@@ -46,7 +47,7 @@ export class ProductSelectionModal {
   }
 
   openFullContactPicker(product: any): void {
-    this.dialog.open(FullContactPicker, {
+    this.dialog.open(BrandSelectorComponent, {
       width: '100vw',
       height: '100vh',
       maxWidth: '100vw',
@@ -58,6 +59,8 @@ export class ProductSelectionModal {
   }
 
   openFitSetPicker(product: any): void {
+    const imageFileName = this.product['imageFileName'] ?? '';
+
     this.dialog.open(FitsetDrawerComponent, {
       width: '100vw',
       height: '100vh',
@@ -65,7 +68,7 @@ export class ProductSelectionModal {
       maxHeight: '100vh',
       data: {
         brandId: product,
-        Image: this.getImagePath(this.product['Image'])
+        Image: this.getImagePath(imageFileName)
       }
     });
   }

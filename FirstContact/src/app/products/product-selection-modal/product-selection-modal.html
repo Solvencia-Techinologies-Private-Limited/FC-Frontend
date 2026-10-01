@@ -3,19 +3,18 @@
     <button class="modal-close" (click)="onClose()" aria-label="Close">&times;</button>
 
     <img
-      class="modal-product-image"
-      [src]="getImagePath(product['Image'])"
-      [alt]="product['brandId']"
-      (error)="onImageError($event)"
-    />
-    <h2 class="modal-product-name">{{ product['brandId'] }}</h2>
+      class="modal-product-image">
+      <img
+          [src]="product.imageFileName ? getImagePath(product.imageFileName) : ''"
+          [alt]="product.brandName">
+    <h2 class="modal-product-name">{{ $any(product).brandName }}</h2>
 
     <p class="modal-prompt">Please choose a contact selection mechanism:</p>
 
     <div class="modal-options">
-      <button class="option-btn" (click)="openFullContactPicker(product['brandId'])">Contact Picker</button>
-      <button class="option-btn" (click)="openClassicContactPicker(product['brandId'])">Classic Contact Picker</button>
-      <button class="option-btn" (click)="openFitSetPicker(product['brandId'])">Fit Set</button>
+      <button class="option-btn" (click)="openFullContactPicker($any(product).brandName)">Contact Picker</button>
+      <button class="option-btn" (click)="openClassicContactPicker($any(product).brandName)">Classic Contact Picker</button>
+      <button class="option-btn" (click)="openFitSetPicker($any(product).brandName)">Fit Set</button>
     </div>
 
   </div>
